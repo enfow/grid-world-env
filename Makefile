@@ -4,10 +4,10 @@ format:
 	isort .
 
 lint:
-	env PYTHONPATH=. pytest --flake8 --pylint --mypy
+	env PYTHONPATH=./src/ pytest src --flake8 --pylint --mypy
 
 utest:
-	env PYTHONPATH=. pytest test/ -s --verbose
+	env PYTHONPATH=./src/ pytest test/ -s --verbose
 
 setup:
 	pip install -r requirements.txt
