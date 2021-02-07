@@ -110,7 +110,7 @@ class TestDPStateAgent:
         assert isinstance(self.agent.value, np.ndarray)
         assert self.agent.value.size == valid_value
 
-    def test_single_backup(self):
+    def test_single_policy_improvement(self):
         """Check policy_evaluation method with single mode is correct."""
         mock_reward_grid = np.array(
             [
@@ -127,10 +127,10 @@ class TestDPStateAgent:
                 [0, -10 / 3, 100 / 3, 0],
             ]
         )
-        self.agent.policy_evaluation(mock_reward_grid)
+        max_diff = self.agent.policy_evaluation(mock_reward_grid)
 
         for state in self.all_states:
-            math.isclose(valid_value[state], self.agent.value[state])
+            assert math.isclose(valid_value[state], self.agent.value[state])
 
     @property
     def get_available_actions(self):
