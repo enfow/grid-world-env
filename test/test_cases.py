@@ -119,7 +119,6 @@ class TestDPStateAgent:
                 [0, 0, 0, 100],
             ]
         )
-        lamb = 0.1
         valid_value = np.array(
             [
                 [0, -10 / 3, -10 / 3, 0],
@@ -128,6 +127,7 @@ class TestDPStateAgent:
             ]
         )
         valid_max_diff = (abs(valid_value)).max()
+        lamb = 0.1
 
         max_diff = self.agent.policy_evaluation(mock_reward_grid)
 
@@ -135,6 +135,39 @@ class TestDPStateAgent:
             assert math.isclose(valid_value[state], self.agent.value[state])
 
         assert math.isclose(max_diff, valid_max_diff)
+
+    def test_single_policy_improvement(self):
+        """Check policy_evaluation method with single mode is correct."""
+        mock_reward_grid = np.array(
+            [
+                [0, 0, 0, -10],
+                [0, -10, 0, 0],
+                [0, 0, 0, 100],
+            ]
+        )
+        valid_value = {
+            (0,0): {"down" : 1/2, "right" : 1/2},
+            (0,1): {"left" : 1/2 , "down" : 1/2, "right" : 0},
+            (0,2): {"left" : 0, "down" : 0, "right" : 1},
+            (0,3): {"left" : 0, "down" :  1},
+
+            (1,0): {"up": 1/3, "down" : 1/3, "right" : 1/3,},
+            (1,1): {"up": 0, "left" : 0, "down" : 0, "right" : 1},
+            (1,2): {"up": 0, "left" : 0, "down" : 0, "right" : 1},
+            (1,3): {"up": 1/2, "left" : 0, "down" : 1/2},
+
+            (2,0): {"up" : 1/2, "right" : 1/2},
+            (2,1): {"left" : 0, "up" : 0, "right" : 1},
+            (2,2): {"left" : 0, "up" : 0, "right" : 1},
+            (2,3): {"left" : 0, "up" : 1},
+        }
+        lamb = 0.1
+
+        self.agent.policy_evaluation(mock_reward_grid)
+        self.agent.policy_improvement()
+
+        for state in self.all_states:
+            assert self.agent.policy[state] == valid_value[state]
 
     @property
     def get_available_actions(self):
