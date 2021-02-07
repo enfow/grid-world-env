@@ -50,15 +50,18 @@ class DPStateAgent:
 
     def policy_improvement(self) -> None:
         """Update policy with self.value."""
-        raise NotImplementedError
+        for state in self.all_states:
+            actions = self.policy[state].keys()
+            for action in actions:
+                row_move, col_move = VALID_ACTIONS[action]
+                next_state = self.__get_next_state(state, action)
 
     def __backup(self, state: Tuple[int, int], reward_grid: np.ndarray) -> float:
         """Update all of the states."""
         value: float = 0.0
         for action in self.policy[state]:
-            row, col = state
-            row_move, col_move = VALID_ACTIONS[action]
-            reward = reward_grid[row + row_move, col + col_move]
+            next_state = self.__get_next_state(state, action)
+            reward = reward_grid[next_state]
             value += self.policy[state][action] * (
                 reward + self.lamb * self.value[state]
             )
@@ -82,6 +85,19 @@ class DPStateAgent:
             policy[state] = {action: 1 / len(actions) for action in actions}
 
         return policy
+
+    def __get_next_state(self, cur_state: Tuple[int, int], action: str) -> Tuple[int, int]:
+        """Get next state with current state and current action.
+        
+        Notes:
+            - If the action can not be choosen at the current state, raise error.
+
+        Return:
+            - next_state
+        """
+        move_row, move_col = VALID_ACTIONS[action]
+        next_state = (cur_state[0] + move_row, cur_state[1] + move_col)
+        return next_state 
 
     def __available_actions_on_state(self, state: Tuple[int, int]) -> Set[str]:
         """Get available actions list on certain state."""
