@@ -49,12 +49,25 @@ class DPStateAgent:
         return max_diff
 
     def policy_improvement(self) -> None:
-        """Update policy with self.value."""
+        """Update greedy policy with self.value."""
         for state in self.all_states:
-            actions = self.policy[state].keys()
-            for action in actions:
-                row_move, col_move = VALID_ACTIONS[action]
+            greedy_actions = list()
+            for idx, action in enumerate(self.policy[state]):
                 next_state = self.__get_next_state(state, action)
+                next_value = self.value[next_state]
+                if idx == 0:
+                    max_value = next_value
+                if next_value > max_value:
+                    greedy_actions = [action]
+                    max_value = next_value
+                elif next_value == max_value:
+                    greedy_actions.append(action)
+
+            for action in self.policy[state]:
+                if action in greedy_actions:
+                    self.policy[state][action] = 1 / len(greedy_actions)
+                else:
+                    self.policy[state][action] = 0.0
 
     def __backup(self, state: Tuple[int, int], reward_grid: np.ndarray) -> float:
         """Update all of the states."""
@@ -86,9 +99,11 @@ class DPStateAgent:
 
         return policy
 
-    def __get_next_state(self, cur_state: Tuple[int, int], action: str) -> Tuple[int, int]:
+    def __get_next_state(
+        self, cur_state: Tuple[int, int], action: str
+    ) -> Tuple[int, int]:
         """Get next state with current state and current action.
-        
+
         Notes:
             - If the action can not be choosen at the current state, raise error.
 
@@ -97,7 +112,7 @@ class DPStateAgent:
         """
         move_row, move_col = VALID_ACTIONS[action]
         next_state = (cur_state[0] + move_row, cur_state[1] + move_col)
-        return next_state 
+        return next_state
 
     def __available_actions_on_state(self, state: Tuple[int, int]) -> Set[str]:
         """Get available actions list on certain state."""
