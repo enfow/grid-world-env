@@ -28,12 +28,22 @@ class DPStateAgent:
     def policy_evaluation(
         self,
         reward_grid: np.ndarray,
-    ) -> None:
-        """Update value with full backup."""
-        new_value = self.__get_initial_value()
+    ) -> float:
+        """Update value with full backup.
+
+        Params:
+            - reward_grid: reward value information for all next states.
+
+        Returns:
+            - max_diff: maximum of the diffs
+        """
+        new_value: np.ndarray = self.__get_initial_value()
+        max_diff: float = 0.0
         for state in self.all_states:
             new_value[state] = self.__backup(state, reward_grid)
+            max_diff = max(max_diff, (self.value[state] - new_value[state]))
         self.value = new_value
+        return max_diff
 
     def policy_improvement(self) -> None:
         """Update policy with self.value."""
