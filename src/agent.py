@@ -76,7 +76,7 @@ class DPStateAgent:
             next_state = self.__get_next_state(state, action)
             reward = reward_grid[next_state]
             value += self.policy[state][action] * (
-                reward + self.lamb * self.value[state]
+                reward + self.lamb * self.value[next_state]
             )
         return value
 
