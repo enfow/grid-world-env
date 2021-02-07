@@ -36,12 +36,15 @@ class DPStateAgent:
 
         Returns:
             - max_diff: maximum of the diffs
+
+        Notes:
+            - max_diff should be calculated with the absolute.
         """
         new_value: np.ndarray = self.__get_initial_value()
         max_diff: float = 0.0
         for state in self.all_states:
             new_value[state] = self.__backup(state, reward_grid)
-            max_diff = max(max_diff, (self.value[state] - new_value[state]))
+            max_diff = max(max_diff, abs(new_value[state] - self.value[state]))
         self.value = new_value
         return max_diff
 
