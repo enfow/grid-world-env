@@ -29,17 +29,17 @@ class DPStateAgent:
         self,
         reward_grid: np.ndarray,
     ) -> None:
-        """Update model with single backup or full backup."""
+        """Update value with full backup."""
         new_value = self.__get_initial_value()
         for state in self.all_states:
-            new_value[state] = self.__single_backup(state, reward_grid)
+            new_value[state] = self.__backup(state, reward_grid)
         self.value = new_value
 
     def policy_improvement(self) -> None:
         """Update policy with self.value."""
         raise NotImplementedError
 
-    def __single_backup(self, state: Tuple[int, int], reward_grid: np.ndarray) -> float:
+    def __backup(self, state: Tuple[int, int], reward_grid: np.ndarray) -> float:
         """Update all of the states."""
         value: float = 0.0
         for action in self.policy[state]:
