@@ -110,7 +110,7 @@ class TestDPStateAgent:
         assert isinstance(self.agent.value, np.ndarray)
         assert self.agent.value.size == valid_value
 
-    def test_single_policy_improvement(self):
+    def test_single_policy_evaluation(self):
         """Check policy_evaluation method with single mode is correct."""
         mock_reward_grid = np.array(
             [
