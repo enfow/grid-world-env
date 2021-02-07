@@ -127,10 +127,14 @@ class TestDPStateAgent:
                 [0, -10 / 3, 100 / 3, 0],
             ]
         )
+        valid_max_diff = (abs(valid_value)).max()
+
         max_diff = self.agent.policy_evaluation(mock_reward_grid)
 
         for state in self.all_states:
             assert math.isclose(valid_value[state], self.agent.value[state])
+
+        assert math.isclose(max_diff, valid_max_diff)
 
     @property
     def get_available_actions(self):
