@@ -146,20 +146,22 @@ class TestDPStateAgent:
             ]
         )
         valid_value = {
-            (0,0): {"down" : 1/2, "right" : 1/2},
-            (0,1): {"left" : 1/2 , "down" : 1/2, "right" : 0},
-            (0,2): {"left" : 0, "down" : 0, "right" : 1},
-            (0,3): {"left" : 0, "down" :  1},
-
-            (1,0): {"up": 1/3, "down" : 1/3, "right" : 1/3,},
-            (1,1): {"up": 0, "left" : 0, "down" : 0, "right" : 1},
-            (1,2): {"up": 0, "left" : 0, "down" : 0, "right" : 1},
-            (1,3): {"up": 1/2, "left" : 0, "down" : 1/2},
-
-            (2,0): {"up" : 1/2, "right" : 1/2},
-            (2,1): {"left" : 0, "up" : 0, "right" : 1},
-            (2,2): {"left" : 0, "up" : 0, "right" : 1},
-            (2,3): {"left" : 0, "up" : 1},
+            (0, 0): {"down": 1 / 2, "right": 1 / 2},
+            (0, 1): {"left": 1 / 2, "down": 1 / 2, "right": 0},
+            (0, 2): {"left": 0, "down": 0, "right": 1},
+            (0, 3): {"left": 0, "down": 1},
+            (1, 0): {
+                "up": 1 / 3,
+                "down": 1 / 3,
+                "right": 1 / 3,
+            },
+            (1, 1): {"up": 0, "left": 0, "down": 0, "right": 1},
+            (1, 2): {"up": 0, "left": 0, "down": 1, "right": 0},
+            (1, 3): {"up": 1 / 2, "left": 0, "down": 1 / 2},
+            (2, 0): {"up": 1 / 2, "right": 1 / 2},
+            (2, 1): {"left": 0, "up": 0, "right": 1},
+            (2, 2): {"left": 0, "up": 0, "right": 1},
+            (2, 3): {"left": 1, "up": 0},
         }
         lamb = 0.1
 
@@ -167,7 +169,7 @@ class TestDPStateAgent:
         self.agent.policy_improvement()
 
         for state in self.all_states:
-            assert self.agent.policy[state] == valid_value[state]
+            assert self.agent.policy[state] == valid_value[state], f"{state}"
 
     @property
     def get_available_actions(self):
