@@ -140,7 +140,12 @@ disable=print-statement,
         exception-escape,
         comprehension-escape,
         # custom
-        no-self-use
+        no-self-use,
+        too-many-instance-attributes,
+        super-init-not-called,
+        too-many-arguments,
+        attribute-defined-outside-init,
+        too-few-public-methods,
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
