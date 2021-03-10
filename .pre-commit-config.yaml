@@ -1,0 +1,15 @@
+# https://pre-commit.com/#pre-commit-sample-config
+repos:
+-   repo: local
+    hooks:
+    - id: format
+      name: format
+      entry: make format
+      language: script
+      types: [python]
+    - id: lint
+      name: lint
+      entry: make lint
+      language: script
+      exclude: ./test/
+      types: [python]
