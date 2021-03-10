@@ -4,12 +4,12 @@ repos:
     hooks:
     - id: format
       name: format
-      entry: make format
+      entry: "make format"
       language: script
       types: [python]
     - id: lint
       name: lint
-      entry: make lint
+      entry: "make lint"
       language: script
       exclude: ./test/
       types: [python]
