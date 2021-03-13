@@ -4,11 +4,11 @@ repos:
     hooks:
     - id: format
       name: format
-      language: script
+      language: system
       entry: make format
       types: [python]
     - id: lint
       name: lint
-      language: script
+      language: system
       entry: make lint
       types: [python]
