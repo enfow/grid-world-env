@@ -5,3 +5,5 @@ unuse/
 .env
 
 .DS_Store
+
+result/
