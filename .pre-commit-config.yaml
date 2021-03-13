@@ -11,5 +11,4 @@ repos:
       name: lint
       language: script
       entry: make lint
-      exclude: ./test/
       types: [python]
