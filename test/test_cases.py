@@ -1,70 +1,17 @@
 """Test cases for environments and agents."""
+import io
 import itertools
 import math
+import sys
+from typing import Dict, Set, Tuple
 
 import numpy as np
 
-from agent import DPStateAgent
-from env import VALID_ACTIONS, GridWorld
+from agent.dp import DPStateAgent
+from env.custom_minigrid import CustomLavaEnv
 
 ROW = 3
 COL = 4
-
-
-class TestGridWorld:
-    """Test cases for GridWorld."""
-
-    def setup_class(self):
-        """Initialize common attributes.."""
-        self.grid = (ROW, COL)
-        self.all_states = list(itertools.product(range(ROW), range(COL)))
-
-    def setup_method(self):
-        """Initialize the GridWorld environment for each test case."""
-        self.env = GridWorld(grid=self.grid, start=(0, 0), finish=(ROW - 1, COL - 1))
-
-    def test_reward_grid_of_env(self):
-        """Check the shape of reward_grid(row/column) is correct.
-
-        CheckList:
-            - row of the env.reward_gird
-            - column of the env.reward_grid
-        """
-        row, col = self.env.reward_grid.shape
-        assert row == ROW
-        assert col == COL
-
-    def test_initiale_reward_grid(self):
-        """Check changing reward correctly with env.update_reward method.
-
-        CheckList:
-            - env.update_reward method update single reward_grid cell at once.
-            - env.update_reward method update only the input state's reward.
-        """
-        for state in self.all_states:
-            assert self.env.reward_grid[state] == 0
-
-    def test_update_reward_grid(self):
-        """Check changing reward correctly with env.update_reward method.
-
-        CheckList:
-            - env.update_reward method update single reward_grid cell at once.
-            - env.update_reward method update only the input state's reward.
-        """
-        valid_values = {
-            (1, 1): 10,
-            (1, 2): -10,
-            (2, 3): 5,
-        }
-
-        for update_state in valid_values:
-            self.env.reward_grid[update_state] = valid_values[update_state]
-
-        for state in self.all_states:
-            if state in valid_values:
-                assert self.env.reward_grid[state] == valid_values[state]
-            else:
-                assert self.env.reward_grid[state] == 0
 
 
 class TestDPStateAgent:
@@ -77,7 +24,8 @@ class TestDPStateAgent:
 
     def setup_method(self):
         """Initialize DPStateAgent for each test case"""
-        self.agent = DPStateAgent(grid=self.grid, lamb=0.1)
+        self.env = CustomLavaEnv(width=self.grid[0], height=self.grid[1])
+        self.agent = DPStateAgent(env=self.env, lamb=0.1)
 
     def test_initial_policy(self):
         """Check initial policy of agent is correct.
@@ -91,11 +39,11 @@ class TestDPStateAgent:
         assert isinstance(self.agent.policy, dict)
         assert len(self.agent.policy) == valid_value
 
-        valid_vaue = self.get_available_actions
+        valid_value = self.get_available_actions
         for state in self.all_states:
             actions = self.agent.policy[state].keys()
             probs = list(self.agent.policy[state].values())
-            assert actions == valid_vaue[state], "problem on state {}".format(state)
+            assert actions == valid_value[state], "problem on state {}".format(state)
             assert probs == [1 / len(actions) for _ in actions]
 
     def test_initial_value(self):
@@ -105,27 +53,15 @@ class TestDPStateAgent:
             - agent.value is dictionary
             - the keys of env.value should include all possible states.
         """
-        valid_value = ROW * COL
+        valid_value = self.get_valid_state_values["initial"]
 
         assert isinstance(self.agent.value, np.ndarray)
-        assert self.agent.value.size == valid_value
+        assert (self.agent.value == valid_value).all()
 
     def test_single_policy_evaluation(self):
         """Check policy_evaluation method with single mode is correct."""
-        mock_reward_grid = np.array(
-            [
-                [0, 0, 0, -10],
-                [0, -10, 0, 0],
-                [0, 0, 0, 100],
-            ]
-        )
-        valid_value = np.array(
-            [
-                [0, -10 / 3, -10 / 3, 0],
-                [-10 / 3, 0, -10 / 4, 30],
-                [0, -10 / 3, 100 / 3, 0],
-            ]
-        )
+        mock_reward_grid = self.get_reward_grid
+        valid_value = self.get_valid_state_values["single_iter"]
         valid_max_diff = (abs(valid_value)).max()
         lamb = 0.1
 
@@ -138,31 +74,8 @@ class TestDPStateAgent:
 
     def test_single_policy_improvement(self):
         """Check policy_evaluation method with single mode is correct."""
-        mock_reward_grid = np.array(
-            [
-                [0, 0, 0, -10],
-                [0, -10, 0, 0],
-                [0, 0, 0, 100],
-            ]
-        )
-        valid_value = {
-            (0, 0): {"down": 1 / 2, "right": 1 / 2},
-            (0, 1): {"left": 1 / 2, "down": 1 / 2, "right": 0},
-            (0, 2): {"left": 0, "down": 0, "right": 1},
-            (0, 3): {"left": 0, "down": 1},
-            (1, 0): {
-                "up": 1 / 3,
-                "down": 1 / 3,
-                "right": 1 / 3,
-            },
-            (1, 1): {"up": 0, "left": 0, "down": 0, "right": 1},
-            (1, 2): {"up": 0, "left": 0, "down": 1, "right": 0},
-            (1, 3): {"up": 1 / 2, "left": 0, "down": 1 / 2},
-            (2, 0): {"up": 1 / 2, "right": 1 / 2},
-            (2, 1): {"left": 0, "up": 0, "right": 1},
-            (2, 2): {"left": 0, "up": 0, "right": 1},
-            (2, 3): {"left": 1, "up": 0},
-        }
+        mock_reward_grid = self.get_reward_grid
+        valid_value = self.get_valid_policies["single_iter"]
         lamb = 0.1
 
         self.agent.policy_evaluation(mock_reward_grid)
@@ -170,6 +83,186 @@ class TestDPStateAgent:
 
         for state in self.all_states:
             assert self.agent.policy[state] == valid_value[state], f"{state}"
+
+    def test_get_action_with_initial_policy(self):
+        """Check correct action according to the initial value."""
+        for state, action in self.get_valid_policies["initial"].items():
+            # actions which can be the output of the initial policy
+            valid_actions = set()
+            for action_str in action:
+                valid_actions.add(self.agent.actions[action_str])
+            # actions which are returns of the agent get_action method
+            output_actions = set()
+            for _ in range(100):
+                action = self.agent.get_action(state)
+                output_actions.add(action)
+                if len(output_actions) == len(valid_actions):
+                    break
+            assert output_actions == valid_actions
+
+    def test_get_action_with_single_iter_policy(self):
+        """Check correct action according to the initial value."""
+
+        mock_reward_grid = self.get_reward_grid
+        lamb = 0.1
+
+        self.agent.policy_evaluation(mock_reward_grid)
+        self.agent.policy_improvement()
+
+        for state, action in self.get_valid_policies["single_iter"].items():
+            # actions which can be the output of the initial policy
+            valid_actions_str = self.get_max_prob_actions(
+                self.get_valid_policies["single_iter"][state]
+            )
+
+            valid_actions = set()
+            for action_str in valid_actions_str:
+                valid_actions.add(self.agent.actions[action_str])
+            # actions which are returns of the agent get_action method
+            output_actions = set()
+            for _ in range(100):
+                action = self.agent.get_action(state)
+                output_actions.add(action)
+                if len(output_actions) == len(valid_actions):
+                    break
+            assert output_actions == valid_actions, "with state {}".format(state)
+
+    def get_max_prob_actions(self, action_prob: Dict[str, float]) -> Set[str]:
+        """Get actions with max probabilities."""
+        max_actions = set()
+        max_prob = 0.0
+        for action, prob in action_prob.items():
+            if prob > max_prob:
+                max_actions = {action}
+                max_prob = prob
+            elif prob == max_prob:
+                max_actions.add(action)
+        return max_actions
+
+    @property
+    def get_reward_grid(self) -> np.array:
+        return np.array(
+            [
+                [0, 0, 0, -10],
+                [0, -10, 0, 0],
+                [0, 0, 0, 100],
+            ]
+        )
+
+    @property
+    def get_valid_state_values(self) -> Dict[str, np.ndarray]:
+        valid_state_values = dict(
+            initial=np.array(
+                [
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                ]
+            ),
+            single_iter=np.array(
+                [
+                    [0, -10 / 3, -10 / 3, 0],
+                    [-10 / 3, 0, -10 / 4, 30],
+                    [0, -10 / 3, 100 / 3, 0],
+                ]
+            ),
+        )
+        return valid_state_values
+
+    @property
+    def get_valid_policies(self) -> Dict[str, Dict[Tuple[int, int], Dict[str, float]]]:
+        """Get valid policies."""
+        valid_policies = dict(
+            # policy after single policy iteration
+            initial={
+                (0, 0): {"down": 1 / 2, "right": 1 / 2},
+                (0, 1): {"left": 1 / 3, "down": 1 / 3, "right": 1 / 3},
+                (0, 2): {"left": 1 / 3, "down": 1 / 3, "right": 1 / 3},
+                (0, 3): {"left": 1 / 2, "down": 1 / 2},
+                (1, 0): {
+                    "up": 1 / 3,
+                    "down": 1 / 3,
+                    "right": 1 / 3,
+                },
+                (1, 1): {"up": 1 / 4, "left": 1 / 4, "down": 1 / 4, "right": 1 / 4},
+                (1, 2): {"up": 1 / 4, "left": 1 / 4, "down": 1 / 4, "right": 1 / 4},
+                (1, 3): {"up": 1 / 3, "left": 1 / 3, "down": 1 / 3},
+                (2, 0): {"up": 1 / 2, "right": 1 / 2},
+                (2, 1): {"left": 1 / 3, "up": 1 / 3, "right": 1 / 3},
+                (2, 2): {"left": 1 / 3, "up": 1 / 3, "right": 1 / 3},
+                (2, 3): {"left": 1 / 2, "up": 1 / 2},
+            },
+            # policy after single policy iteration
+            single_iter={
+                (0, 0): {"down": 1 / 2, "right": 1 / 2},
+                (0, 1): {"left": 1 / 2, "down": 1 / 2, "right": 0},
+                (0, 2): {"left": 0, "down": 0, "right": 1},
+                (0, 3): {"left": 0, "down": 1},
+                (1, 0): {
+                    "up": 1 / 3,
+                    "down": 1 / 3,
+                    "right": 1 / 3,
+                },
+                (1, 1): {"up": 0, "left": 0, "down": 0, "right": 1},
+                (1, 2): {"up": 0, "left": 0, "down": 1, "right": 0},
+                (1, 3): {"up": 1 / 2, "left": 0, "down": 1 / 2},
+                (2, 0): {"up": 1 / 2, "right": 1 / 2},
+                (2, 1): {"left": 0, "up": 0, "right": 1},
+                (2, 2): {"left": 0, "up": 0, "right": 1},
+                (2, 3): {"left": 1, "up": 0},
+            },
+            # policy only up and down
+            up_and_down={
+                (0, 0): {"down": 1, "right": 0},
+                (0, 1): {"left": 0, "down": 1, "right": 0},
+                (0, 2): {"left": 0, "down": 1, "right": 0},
+                (0, 3): {"left": 0, "down": 1},
+                (1, 0): {
+                    "up": 0,
+                    "down": 1,
+                    "right": 0,
+                },
+                (1, 1): {"up": 0, "left": 0, "down": 1, "right": 0},
+                (1, 2): {"up": 0, "left": 0, "down": 1, "right": 0},
+                (1, 3): {"up": 0, "left": 0, "down": 1},
+                (2, 0): {"up": 1, "right": 0},
+                (2, 1): {"left": 0, "up": 1, "right": 0},
+                (2, 2): {"left": 0, "up": 1, "right": 0},
+                (2, 3): {"left": 0, "up": 1},
+            },
+        )
+        return valid_policies
+
+    def get_invalid_policies(
+        self,
+    ) -> Dict[str, Dict[Tuple[int, int], Dict[str, float]]]:
+        """Get invalid policies."""
+        invalid_policies = dict(
+            # invalid policy
+            # - (0,0)'s sum is over 1
+            # - (1,1)'s sum is under 1
+            # - (1,3)'s action probability is all 0
+            # - (2,2)'s action probability is all 1
+            sum_is_not_one={
+                (0, 0): {"down": 1, "right": 2},
+                (0, 1): {"left": 1 / 2, "down": 1 / 2, "right": 0},
+                (0, 2): {"left": 0, "down": 0, "right": 1},
+                (0, 3): {"left": 0, "down": 1},
+                (1, 0): {
+                    "up": 1 / 3,
+                    "down": 1 / 3,
+                    "right": 1 / 3,
+                },
+                (1, 1): {"up": 0, "left": 0, "down": 1 / 2, "right": 1 / 3},
+                (1, 2): {"up": 0, "left": 0, "down": 1, "right": 0},
+                (1, 3): {"up": 0, "left": 0, "down": 0},
+                (2, 0): {"up": 1 / 2, "right": 1 / 2},
+                (2, 1): {"left": 0, "up": 0, "right": 1},
+                (2, 2): {"left": 1, "up": 1, "right": 1},
+                (2, 3): {"left": 1, "up": 0},
+            }
+        )
+        return invalid_policies
 
     @property
     def get_available_actions(self):
