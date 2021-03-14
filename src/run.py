@@ -39,7 +39,7 @@ def runner(
     # Run until done == True
     for _ in range(max_length):
         # Take a step
-        action = policy.get_action(obs)
+        action = policy.get_action(obs["pos"])
         obs, reward, done, _ = environment.step(action)
 
         update_info = dict(
