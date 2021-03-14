@@ -212,8 +212,24 @@ class CustomLavaEnv(MiniGridEnv):
     def __get_forward_pos_and_agent_dir(
         self, action: int
     ) -> Tuple[Tuple[int, int], int]:
-        """Get forward position with action."""
-        cur_r, cur_c = self.agent_pos
+        """Get forward position with action.
+
+        Notes:
+            - actions:
+                - left: 0
+                - right: 1
+                - up: 2
+                - down: 3
+            - agent_dir(MiniGridEnv):
+                - left: 2
+                - right: 0
+                - up: 3
+                - down: 1
+            - agent_pos in MiniGridEnv has form (column, row) not (row, column).
+                So the return value switch the order of the agent position for
+                forward position.
+        """
+        cur_c, cur_r = self.agent_pos
         # change direction with action value
         if action == self.actions["right"]:
             agent_dir = 0
@@ -240,18 +256,19 @@ class CustomLavaEnv(MiniGridEnv):
         # get information about the forward cell
         fwd_pos, self.agent_dir = self.__get_forward_pos_and_agent_dir(action)
         fwd_cell = self.__get_grid_type(*fwd_pos)
+        fwd_r, fwd_c = fwd_pos
 
         # forward cell is empty
         if fwd_cell is None:
-            self.agent_pos = fwd_pos
+            self.agent_pos = (fwd_c, fwd_r)
         # forward cell is goal
         elif fwd_cell.type == "goal":
-            self.agent_pos = fwd_pos
+            self.agent_pos = (fwd_c, fwd_r)
             reward = self.get_goal_reward()
             done = True
         # forward cell is lava
         elif fwd_cell is not None and fwd_cell.type == "lava":
-            self.agent_pos = fwd_pos
+            self.agent_pos = (fwd_c, fwd_r)
             reward = self.get_lava_reward()
         # forward cell is Wall
         elif fwd_cell is not None and fwd_cell.type == "wall":

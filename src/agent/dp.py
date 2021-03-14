@@ -2,19 +2,21 @@
 
 import itertools
 import random
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import gym
 import numpy as np
 
+from agent.abstract_agent import AbstractAgent
 
-class DPStateAgent:
+
+class DPStateAgent(AbstractAgent):
     """Define Dynamic Programming Algorithm."""
 
     def __init__(
         self,
         env: gym.Env,
-        lamb: float,
+        args: Dict[str, Any],
     ) -> None:
         """Initialize.
 
@@ -27,14 +29,13 @@ class DPStateAgent:
             - all_states: the list of all states(grid cell)
             - lamb: lambda value for return
         """
-        self.row, self.col = env.grid_size
-        self.actions: Dict[str, int] = env.actions
+        super().__init__(env)
         self.policy: Dict[
             Tuple[int, int], Dict[str, float]
         ] = self.__get_initial_policy()
         self.value: np.ndarray = self.__get_initial_value()
         self.all_states: List[Tuple[int, int]] = self.__get_all_states()
-        self.lamb: float = lamb
+        self.lamb: float = args["lambda"]
 
     def get_action(self, state: Tuple[int, int]) -> int:
         """Get action given state.
@@ -58,6 +59,11 @@ class DPStateAgent:
                 elif prob == max_prob:
                     max_actions.append(action)
         return self.actions[random.choice(max_actions)]
+
+    def update_policy(self, update_info: Dict[str, Any]) -> None:
+        """Updata policy with policy iteration."""
+        self.policy_evaluation(update_info["reward_grid"])
+        self.policy_improvement()
 
     def policy_evaluation(
         self,

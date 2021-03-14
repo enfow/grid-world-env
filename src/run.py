@@ -42,6 +42,13 @@ def runner(
         action = policy.get_action(obs)
         obs, reward, done, _ = environment.step(action)
 
+        update_info = dict(
+            agent_pos=obs["pos"],
+            reward_grid=obs["reward_grid"],
+        )
+
+        policy.update_policy(update_info)
+
         episode_reward += reward
         episode_length += 1
 
@@ -67,7 +74,7 @@ if __name__ == "__main__":
     if args.policy == "random":
         run_policy = RandomPolicy(env)
     elif args.policy == "dpstate":
-        run_policy = DPStateAgent(env, lamb=0.1)
+        run_policy = DPStateAgent(env, {"lambda": 0.1})
     else:
         raise NotImplementedError
     runner(run_policy, env, save_video=True, save_dir="./result")
