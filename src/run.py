@@ -7,11 +7,13 @@ Reference:
     - https://github.com/maximecb/gym-minigrid
 """
 
+import argparse
 from typing import Any
 
 import gym
 from gym.wrappers import Monitor
 
+from agent.dp import DPStateAgent
 from agent.random_policy import RandomPolicy
 from env.custom_minigrid import CustomLavaEnv
 
@@ -52,10 +54,20 @@ def runner(
     env.close()
 
 
-# Test that the logging function is working
-grid_size = (5, 5)
-env = CustomLavaEnv(
-    width=grid_size[0], height=grid_size[1], obstacle_pos=[(2, 2), (3, 3)]
-)
-rand_policy = RandomPolicy(env.action_space)
-runner(rand_policy, env, save_video=True, save_dir="./result")
+parser = argparse.ArgumentParser(description="Process some integers.")
+parser.add_argument("--policy", default="random", type=str)
+args = parser.parse_args()
+
+
+if __name__ == "__main__":
+    grid_height, grid_width = 3, 4
+    env = CustomLavaEnv(
+        width=grid_width, height=grid_height, obstacle_pos=[(1, 1), (1, 2)]
+    )
+    if args.policy == "random":
+        run_policy = RandomPolicy(env)
+    elif args.policy == "dpstate":
+        run_policy = DPStateAgent(env, lamb=0.1)
+    else:
+        raise NotImplementedError
+    runner(run_policy, env, save_video=True, save_dir="./result")

@@ -3,7 +3,7 @@ import io
 import itertools
 import math
 import sys
-from typing import Dict, Set, Tuple
+from typing import Dict, List, Set, Tuple
 
 import numpy as np
 
@@ -14,17 +14,82 @@ ROW = 3
 COL = 4
 
 
+class TestCustomLavaEnv:
+    """Test cases for CustomLavaEnv."""
+
+    def setup_class(self):
+        """Initialize common attributes."""
+        self.grid = (ROW, COL)
+        self.all_states = list(itertools.product(range(ROW), range(COL)))
+        self.obstacle_pos = [(1, 1), (0, 3)]
+
+    def setup_method(self):
+        """Initialize CustomLavaEnv for each test cases."""
+        self.env = CustomLavaEnv(width=COL, height=ROW, obstacle_pos=self.obstacle_pos)
+
+    def test_initial_observation(self):
+        """Check initial observation which is return of the reset method."""
+        valid_reward_grid = self.get_reward_grid
+        valid_agent_pos = (0, 0)
+
+        initial_obs = self.env.reset()
+
+        assert initial_obs["pos"] == valid_agent_pos
+        assert (initial_obs["reward_grid"] == valid_reward_grid).all()
+
+    def test_observation_after_step(self):
+        """Check change of observation with step method."""
+
+        for name, action_list in self.get_action_lists.items():
+            obs = self.env.reset()
+            for idx, action in enumerate(action_list):
+                obs, _, _, _ = self.env.step(action)
+                valid_pos = self.get_position_with_action_lists[name][idx]
+                assert obs["pos"] == valid_pos, "set {}, action {}, state {}".format(
+                    name, action, obs["pos"]
+                )
+
+    @property
+    def get_reward_grid(self) -> np.array:
+        return np.array(
+            [
+                [0, 0, 0, -10],
+                [0, -10, 0, 0],
+                [0, 0, 0, 100],
+            ]
+        )
+
+    @property
+    def get_action_lists(self) -> Dict[str, List[int]]:
+        return dict(
+            action1=[1, 1, 1, 3, 3],
+            action2=[3, 3, 1, 1, 1],
+            action3=[3, 3, 1, 0, 1, 1, 1],
+            action4=[3, 1, 1, 3, 1],
+        )
+
+    @property
+    def get_position_with_action_lists(self) -> Dict[str, List[Tuple[int, int]]]:
+        return dict(
+            action1=[(0, 1), (0, 2), (0, 3), (1, 3), (2, 3)],
+            action2=[(1, 0), (2, 0), (2, 1), (2, 2), (2, 3)],
+            action3=[(1, 0), (2, 0), (2, 1), (2, 0), (2, 1), (2, 2), (2, 3)],
+            action4=[(1, 0), (1, 1), (1, 2), (2, 2), (2, 3)],
+        )
+
+
 class TestDPStateAgent:
     """Test cases for DPStateAgent."""
 
     def setup_class(self):
-        """Initialize commne attributes."""
+        """Initialize common attributes."""
         self.grid = (ROW, COL)
         self.all_states = list(itertools.product(range(ROW), range(COL)))
+        self.obstacle_pos = [(1, 1), (0, 3)]
 
     def setup_method(self):
         """Initialize DPStateAgent for each test case"""
-        self.env = CustomLavaEnv(width=self.grid[0], height=self.grid[1])
+        self.env = CustomLavaEnv(width=COL, height=ROW, obstacle_pos=self.obstacle_pos)
         self.agent = DPStateAgent(env=self.env, lamb=0.1)
 
     def test_initial_policy(self):
