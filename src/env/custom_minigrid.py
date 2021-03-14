@@ -177,8 +177,14 @@ class CustomLavaEnv(MiniGridEnv):
         return position_with_walls
 
     def __get_pos_on_valid_area(self) -> Tuple[int, int]:
-        """Get agent position."""
-        row, col = self.agent_pos
+        """Get agent position.
+
+        Notes:
+            - agent_pos in MiniGridEnv has form (column, row) not (row, column).
+                So the return value switch the order of the agent position for
+                forward position.
+        """
+        col, row = self.agent_pos
         return (row - 1, col - 1)
 
     def gen_obs(self) -> Dict[str, Any]:

@@ -90,7 +90,7 @@ class TestDPStateAgent:
     def setup_method(self):
         """Initialize DPStateAgent for each test case"""
         self.env = CustomLavaEnv(width=COL, height=ROW, obstacle_pos=self.obstacle_pos)
-        self.agent = DPStateAgent(env=self.env, lamb=0.1)
+        self.agent = DPStateAgent(env=self.env, args={"lambda": 0.1})
 
     def test_initial_policy(self):
         """Check initial policy of agent is correct.
