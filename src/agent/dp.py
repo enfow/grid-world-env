@@ -10,13 +10,13 @@ import numpy as np
 from agent.abstract_agent import AbstractAgent
 
 
-class DPStateAgent(AbstractAgent):
-    """Define Dynamic Programming Algorithm."""
+class DPAgent(AbstractAgent):
+    """Define Dynamic Programming Abstract Class."""
 
     def __init__(
         self,
         env: gym.Env,
-        args: Dict[str, Any],
+        config: Dict[str, Any],
     ) -> None:
         """Initialize.
 
@@ -32,10 +32,139 @@ class DPStateAgent(AbstractAgent):
         super().__init__(env)
         self.policy: Dict[
             Tuple[int, int], Dict[str, float]
-        ] = self.__get_initial_policy()
-        self.value: np.ndarray = self.__get_initial_value()
-        self.all_states: List[Tuple[int, int]] = self.__get_all_states()
-        self.lamb: float = args["lambda"]
+        ] = self._get_initial_policy()
+        self.value: np.ndarray = self._get_initial_value()
+        self.all_states: List[Tuple[int, int]] = self._get_all_states()
+        self.lamb: float = config["lambda"]
+        self.threshold: float = config["threshold"]
+        self.max_eval: int = config["max_evaluation"]
+
+    def get_action(self, state: Tuple[int, int]) -> int:
+        """Get action."""
+        raise NotImplementedError
+
+    def policy_evaluation(
+        self,
+        reward_grid: np.ndarray,
+    ) -> float:
+        """Define Policy Evaluation."""
+        raise NotImplementedError
+
+    def policy_improvement(self) -> None:
+        """Define Policy Improvement."""
+        raise NotImplementedError
+
+    def _get_initial_value(self) -> np.ndarray:
+        """Get initial value of the each state."""
+        raise NotImplementedError
+
+    def update_policy(self, update_info: Dict[str, Any]) -> float:
+        """Updata policy with policy evaluation and policy improvement.
+
+        Notes:
+            - policy evaluation: Update value
+            - policy improvement: Update policy with new value
+        """
+        reward_grid = update_info["reward_grid"]
+
+        for _ in range(self.max_eval):
+            max_diff = self.policy_evaluation(reward_grid)
+            if max_diff < self.threshold:
+                break
+
+        self.policy_improvement()
+        return max_diff
+
+    def _get_next_state(
+        self, cur_state: Tuple[int, int], action: str
+    ) -> Tuple[int, int]:
+        """Get next state with current state and current action.
+
+        Notes:
+            - If the action can not be choosen at the current state, raise error.
+
+        Return:
+            - next_state
+        """
+        move_row, move_col = self.action_to_move[action]
+        next_state = (cur_state[0] + move_row, cur_state[1] + move_col)
+        return next_state
+
+    def _get_all_states(self) -> List[Tuple[int, int]]:
+        """Get all of the availavle states."""
+        return list(itertools.product(range(self.row), range(self.col)))
+
+    def _get_initial_policy(self) -> Dict[Tuple[int, int], Dict[str, float]]:
+        """Get initial policy for each state."""
+        policy = dict()
+
+        states = itertools.product(range(self.row), range(self.col))
+        for state in states:
+            actions = self.available_actions_on_state(state).keys()
+            policy[state] = {action: 1 / len(actions) for action in actions}
+
+        return policy
+
+    def available_actions_on_state(
+        self, state: Tuple[int, int]
+    ) -> Dict[str, Tuple[int, int]]:
+        """Get available actions list on certain state."""
+        row, col = state
+        available_actions = dict()
+
+        for action in self.actions.keys():
+            row_move, col_move = self.action_to_move[action]
+            if (
+                not (
+                    (row + row_move < 0)
+                    or (row + row_move >= self.row)
+                    or (col + col_move < 0)
+                    or (col + col_move >= self.col)
+                )
+                or action == "done"
+            ):
+                available_actions[action] = (row + row_move, col + col_move)
+
+        return available_actions
+
+    def print_policy(self) -> None:
+        """Print state value."""
+        for state, action_prob in self.policy.items():
+            max_prob = 0.0
+            actions = list()
+            for action, prob in action_prob.items():
+                if max_prob < prob:
+                    max_prob = prob
+                    actions = [action]
+                elif max_prob == prob:
+                    actions.append(action)
+            print("{} | {}".format(state, actions))
+
+    def print_value(self) -> None:
+        """Print state value."""
+        print(self.value)
+
+    @property
+    def action_to_move(self) -> Dict[str, Tuple[int, int]]:
+        """Get direction of each actions.
+
+        Notes:
+            - the return value is dictionary
+                - key of it is action name like 'left'
+                - value of it is direction to move with each key action
+                - direction is tuple like (Row direction, Col direction)
+            - the upper-right corner is (0,0)
+        """
+        return {
+            "left": (0, -1),
+            "right": (0, 1),
+            "up": (-1, 0),
+            "down": (1, 0),
+        }
+
+
+class DPStateAgent(DPAgent):
+    """Define Dynamic Programming Algorithm."""
 
     def get_action(self, state: Tuple[int, int]) -> int:
         """Get action given state.
@@ -60,11 +189,6 @@ class DPStateAgent(AbstractAgent):
                     max_actions.append(action)
         return self.actions[random.choice(max_actions)]
 
-    def update_policy(self, update_info: Dict[str, Any]) -> None:
-        """Updata policy with policy iteration."""
-        self.policy_evaluation(update_info["reward_grid"])
-        self.policy_improvement()
-
     def policy_evaluation(
         self,
         reward_grid: np.ndarray,
@@ -80,7 +204,7 @@ class DPStateAgent(AbstractAgent):
         Notes:
             - max_diff should be calculated with the absolute.
         """
-        new_value: np.ndarray = self.__get_initial_value()
+        new_value: np.ndarray = self._get_initial_value()
         max_diff: float = 0.0
         for state in self.all_states:
             new_value[state] = self.__backup(state, reward_grid)
@@ -93,7 +217,7 @@ class DPStateAgent(AbstractAgent):
         for state in self.all_states:
             greedy_actions = list()
             for idx, action in enumerate(self.policy[state]):
-                next_state = self.__get_next_state(state, action)
+                next_state = self._get_next_state(state, action)
                 next_value = self.value[next_state]
                 if idx == 0:
                     max_value = next_value
@@ -113,83 +237,13 @@ class DPStateAgent(AbstractAgent):
         """Update all of the states."""
         value: float = 0.0
         for action in self.policy[state]:
-            next_state = self.__get_next_state(state, action)
+            next_state = self._get_next_state(state, action)
             reward = reward_grid[next_state]
             value += self.policy[state][action] * (
                 reward + self.lamb * self.value[next_state]
             )
         return value
 
-    def __get_all_states(self) -> List[Tuple[int, int]]:
-        """Get all of the availavle states."""
-        return list(itertools.product(range(self.row), range(self.col)))
-
-    def __get_initial_value(self) -> np.ndarray:
+    def _get_initial_value(self) -> np.ndarray:
         """Get initial value of the each state."""
         return np.zeros((self.row, self.col))
-
-    def __get_initial_policy(self) -> Dict[Tuple[int, int], Dict[str, float]]:
-        """Get initial policy for each state."""
-        policy = dict()
-
-        states = itertools.product(range(self.row), range(self.col))
-        for state in states:
-            actions = self.available_actions_on_state(state).keys()
-            policy[state] = {action: 1 / len(actions) for action in actions}
-
-        return policy
-
-    def __get_next_state(
-        self, cur_state: Tuple[int, int], action: str
-    ) -> Tuple[int, int]:
-        """Get next state with current state and current action.
-
-        Notes:
-            - If the action can not be choosen at the current state, raise error.
-
-        Return:
-            - next_state
-        """
-        move_row, move_col = self.action_to_move[action]
-        next_state = (cur_state[0] + move_row, cur_state[1] + move_col)
-        return next_state
-
-    def available_actions_on_state(
-        self, state: Tuple[int, int]
-    ) -> Dict[str, Tuple[int, int]]:
-        """Get available actions list on certain state."""
-        row, col = state
-        available_actions = dict()
-
-        for action in self.actions.keys():
-            row_move, col_move = self.action_to_move[action]
-            if (
-                not (
-                    (row + row_move < 0)
-                    or (row + row_move >= self.row)
-                    or (col + col_move < 0)
-                    or (col + col_move >= self.col)
-                )
-                or action == "done"
-            ):
-                available_actions[action] = (row + row_move, col + col_move)
-
-        return available_actions
-
-    @property
-    def action_to_move(self) -> Dict[str, Tuple[int, int]]:
-        """Get direction of each actions.
-
-        Notes:
-            - the return value is dictionary
-                - key of it is action name like 'left'
-                - value of it is direction to move with each key action
-                - direction is tuple like (Row direction, Col direction)
-            - the upper-right corner is (0,0)
-        """
-        return {
-            "left": (0, -1),
-            "right": (0, 1),
-            "up": (-1, 0),
-            "down": (1, 0),
-        }

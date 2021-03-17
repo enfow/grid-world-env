@@ -6,7 +6,8 @@ Email: wgm0601@gmail.com
 Reference:
     - https://github.com/maximecb/gym-minigrid
 """
-from typing import Any, Dict, List, Optional, Tuple
+import itertools
+from typing import Any, Dict, Tuple
 
 import numpy as np
 from gym_minigrid.minigrid import (Goal, Grid, Lava, MiniGridEnv, WorldObj,
@@ -42,7 +43,7 @@ class CustomLavaEnv(MiniGridEnv):
         seed: int = 1,
         agent_view_size: int = 7,
         obstacle_type: WorldObj = Lava,
-        obstacle_pos: Optional[List[Tuple[int, int]]] = None,
+        obstacle_pos: Tuple[Tuple[int, int], ...] = (),
     ) -> None:
         """Initialize."""
         self.valid_width = width
@@ -50,18 +51,13 @@ class CustomLavaEnv(MiniGridEnv):
         self.width: int = width + 2  # add 2 for surrounding wall
         self.height: int = height + 2  # add 2 for surrounding wall
 
-        # Current position and direction of the agent
-        agent_initial_pos = [(0, 0)]
-        self.agent_pos: Tuple[int, int] = self.__adjust_pos_consider_walls(
-            agent_initial_pos
-        )[0]
-        self.agent_dir: int = 0
-
         # Setting for obstacles
         self.obstacle_type: WorldObj = obstacle_type
         self.obstacle_pos = obstacle_pos
 
-        self.goal_pos = [(self.valid_height - 1, self.valid_width - 1)]
+        self.goal_pos: Tuple[Tuple[int, int], ...] = (
+            (self.valid_height - 1, self.valid_width - 1),
+        )
 
         # Action enumeration for this environment
         self.actions = VALID_ACTIONS
@@ -134,47 +130,47 @@ class CustomLavaEnv(MiniGridEnv):
         """
         assert width >= 5 and height >= 5
 
+        # Current position and direction of the agent
+        self.agent_pos: Tuple[int, int] = (1, 1)  # (0,0) is wall
+        self.agent_dir: int = 0
+
         # Create an empty grid
         self.grid = Grid(width, height)
 
         # Create wall
         self.grid.wall_rect(0, 0, width, height)
 
-        # Starting point
-        self.agent_pos = (1, 1)
-        self.agent_dir = 0
-
         # Create Goal
-        for goal_pos in self.__adjust_pos_consider_walls(self.goal_pos):
-            self.__set_grid_type(*goal_pos, Goal())
+        for position in self.goal_pos:
+            goal_with_wall = self.__adjust_pos_consider_walls(position)
+            self.__set_grid_type(*goal_with_wall, Goal())
 
         # Create Lava
         if self.obstacle_pos:
-            for lava_pos in self.__adjust_pos_consider_walls(self.obstacle_pos):
-                self.__set_grid_type(*lava_pos, self.obstacle_type())
+            for lava_pos in self.obstacle_pos:
+                lava_with_wall = self.__adjust_pos_consider_walls(lava_pos)
+                self.__set_grid_type(*lava_with_wall, self.obstacle_type())
 
         # Settings for reward_grid
-        for goal_pos in self.goal_pos:
-            self.reward_grid[goal_pos] = self.get_goal_reward()
-        if self.obstacle_pos:
-            for lava_pos in self.obstacle_pos:
-                self.reward_grid[lava_pos] = self.get_lava_reward()
+        for cell in itertools.product(
+            range(self.valid_height), range(self.valid_width)
+        ):
+            if cell in self.goal_pos:
+                self.reward_grid[cell] = self.get_goal_reward()
+            elif cell in self.obstacle_pos:
+                self.reward_grid[cell] = self.get_lava_reward()
+            else:
+                self.reward_grid[cell] = self.get_default_reward()
 
-    def __adjust_pos_consider_walls(
-        self, positions: List[Tuple[int, int]]
-    ) -> List[Tuple[int, int]]:
+    def __adjust_pos_consider_walls(self, position: Tuple[int, int]) -> Tuple[int, int]:
         """Check validity of the input positions and adjust it with walls."""
-        if not positions:
-            return list()
-        position_with_walls = list()
-        for row, col in positions:
-            assert row >= 0
-            assert row <= self.height - 2
-            assert col >= 0
-            assert col <= self.width - 2
-            position_with_walls.append((row + 1, col + 1))
+        row, col = position
+        assert row >= 0
+        assert row <= self.height - 2
+        assert col >= 0
+        assert col <= self.width - 2
 
-        return position_with_walls
+        return (row + 1, col + 1)
 
     def __get_pos_on_valid_area(self) -> Tuple[int, int]:
         """Get agent position.
@@ -256,7 +252,7 @@ class CustomLavaEnv(MiniGridEnv):
 
     def step_forward(self, action: int) -> Tuple[int, bool]:
         """Move agent with action."""
-        reward = 0
+        reward = self.get_default_reward()
         done = False
 
         # get information about the forward cell
@@ -285,10 +281,14 @@ class CustomLavaEnv(MiniGridEnv):
 
         return reward, done
 
+    def get_default_reward(self) -> int:
+        """Get the reward when the agent arrive at None type cell."""
+        return -1
+
     def get_goal_reward(self) -> int:
-        """Get the reward that agent receive when it arrive at the goal."""
-        return 100
+        """Get the reward when the agent arrive at Goal type cell."""
+        return 0
 
     def get_lava_reward(self) -> int:
-        """Get the reward that agent receive when it arrive at the lava."""
-        return -10
+        """Get the reward when the agent arrive at Lava type cell."""
+        return -100
