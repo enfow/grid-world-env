@@ -16,7 +16,7 @@ class DPStateAgent(AbstractAgent):
     def __init__(
         self,
         env: gym.Env,
-        args: Dict[str, Any],
+        config: Dict[str, Any],
     ) -> None:
         """Initialize.
 
@@ -35,7 +35,9 @@ class DPStateAgent(AbstractAgent):
         ] = self.__get_initial_policy()
         self.value: np.ndarray = self.__get_initial_value()
         self.all_states: List[Tuple[int, int]] = self.__get_all_states()
-        self.lamb: float = args["lambda"]
+        self.lamb: float = config["lambda"]
+        self.threshold: float = config["threshold"]
+        self.max_eval: int = config["max_evaluation"]
 
     def get_action(self, state: Tuple[int, int]) -> int:
         """Get action given state.
@@ -60,10 +62,22 @@ class DPStateAgent(AbstractAgent):
                     max_actions.append(action)
         return self.actions[random.choice(max_actions)]
 
-    def update_policy(self, update_info: Dict[str, Any]) -> None:
-        """Updata policy with policy iteration."""
-        self.policy_evaluation(update_info["reward_grid"])
+    def update_policy(self, update_info: Dict[str, Any]) -> float:
+        """Updata policy with policy evaluation and policy improvement.
+
+        Notes:
+            - policy evaluation: Update value
+            - policy improvement: Update policy with new value
+        """
+        reward_grid = update_info["reward_grid"]
+
+        for _ in range(self.max_eval):
+            max_diff = self.policy_evaluation(reward_grid)
+            if max_diff < self.threshold:
+                break
+
         self.policy_improvement()
+        return max_diff
 
     def policy_evaluation(
         self,
@@ -175,6 +189,23 @@ class DPStateAgent(AbstractAgent):
                 available_actions[action] = (row + row_move, col + col_move)
 
         return available_actions
+
+    def print_policy(self) -> None:
+        """Print state value."""
+        for state, action_prob in self.policy.items():
+            max_prob = 0.0
+            actions = list()
+            for action, prob in action_prob.items():
+                if max_prob < prob:
+                    max_prob = prob
+                    actions = [action]
+                elif max_prob == prob:
+                    actions.append(action)
+            print("{} | {}".format(state, actions))
+
+    def print_value(self) -> None:
+        """Print state value."""
+        print(self.value)
 
     @property
     def action_to_move(self) -> Dict[str, Tuple[int, int]]:
