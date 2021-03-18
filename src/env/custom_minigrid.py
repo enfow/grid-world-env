@@ -272,6 +272,7 @@ class CustomLavaEnv(MiniGridEnv):
         elif fwd_cell is not None and fwd_cell.type == "lava":
             self.agent_pos = (fwd_c, fwd_r)
             reward = self.get_lava_reward()
+            done = True
         # forward cell is Wall
         elif fwd_cell is not None and fwd_cell.type == "wall":
             pass
