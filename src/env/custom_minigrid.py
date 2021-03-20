@@ -44,6 +44,9 @@ class CustomLavaEnv(MiniGridEnv):
         agent_view_size: int = 7,
         obstacle_type: WorldObj = Lava,
         obstacle_pos: Tuple[Tuple[int, int], ...] = (),
+        obstacle_reward: int = -10,
+        goal_reward: int = 100,
+        default_reward: int = 0,
     ) -> None:
         """Initialize."""
         self.valid_width = width
@@ -79,6 +82,10 @@ class CustomLavaEnv(MiniGridEnv):
             dtype="uint8",
         )
         self.observation_space = spaces.Dict({"image": self.observation_space})
+
+        self.default_reward = default_reward
+        self.goal_reward = goal_reward
+        self.obstacle_reward = obstacle_reward
 
         # Range of possible rewards
         self.reward_range = (-10, 100)
@@ -156,11 +163,11 @@ class CustomLavaEnv(MiniGridEnv):
             range(self.valid_height), range(self.valid_width)
         ):
             if cell in self.goal_pos:
-                self.reward_grid[cell] = self.get_goal_reward()
+                self.reward_grid[cell] = self.goal_reward
             elif cell in self.obstacle_pos:
-                self.reward_grid[cell] = self.get_lava_reward()
+                self.reward_grid[cell] = self.obstacle_reward
             else:
-                self.reward_grid[cell] = self.get_default_reward()
+                self.reward_grid[cell] = self.default_reward
 
     def __adjust_pos_consider_walls(self, position: Tuple[int, int]) -> Tuple[int, int]:
         """Check validity of the input positions and adjust it with walls."""
@@ -252,7 +259,7 @@ class CustomLavaEnv(MiniGridEnv):
 
     def step_forward(self, action: int) -> Tuple[int, bool]:
         """Move agent with action."""
-        reward = self.get_default_reward()
+        reward = self.default_reward
         done = False
 
         # get information about the forward cell
@@ -266,12 +273,12 @@ class CustomLavaEnv(MiniGridEnv):
         # forward cell is goal
         elif fwd_cell.type == "goal":
             self.agent_pos = (fwd_c, fwd_r)
-            reward = self.get_goal_reward()
+            reward = self.goal_reward
             done = True
         # forward cell is lava
         elif fwd_cell is not None and fwd_cell.type == "lava":
             self.agent_pos = (fwd_c, fwd_r)
-            reward = self.get_lava_reward()
+            reward = self.obstacle_reward
             done = True
         # forward cell is Wall
         elif fwd_cell is not None and fwd_cell.type == "wall":
@@ -281,15 +288,3 @@ class CustomLavaEnv(MiniGridEnv):
             AssertionError("unknown action")
 
         return reward, done
-
-    def get_default_reward(self) -> int:
-        """Get the reward when the agent arrive at None type cell."""
-        return -1
-
-    def get_goal_reward(self) -> int:
-        """Get the reward when the agent arrive at Goal type cell."""
-        return 0
-
-    def get_lava_reward(self) -> int:
-        """Get the reward when the agent arrive at Lava type cell."""
-        return -100
