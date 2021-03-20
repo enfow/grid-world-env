@@ -7,7 +7,7 @@ from typing import Dict, List, Set, Tuple
 
 import numpy as np
 
-from agent.dp import DPStateAgent
+from agent.dp import PolicyIteration
 from env.custom_minigrid import CustomLavaEnv
 
 ROW = 3
@@ -78,8 +78,8 @@ class TestCustomLavaEnv:
         )
 
 
-class TestDPStateAgent:
-    """Test cases for DPStateAgent."""
+class TestPolicyIteration:
+    """Test cases for PolicyIteration."""
 
     def setup_class(self):
         """Initialize common attributes."""
@@ -88,9 +88,16 @@ class TestDPStateAgent:
         self.obstacle_pos = [(1, 1), (0, 3)]
 
     def setup_method(self):
-        """Initialize DPStateAgent for each test case"""
+        """Initialize PolicyIteration for each test case"""
         self.env = CustomLavaEnv(width=COL, height=ROW, obstacle_pos=self.obstacle_pos)
-        self.agent = DPStateAgent(env=self.env, args={"lambda": 0.1})
+        self.agent = PolicyIteration(
+            env=self.env,
+            config={
+                "lambda": 0.1,
+                "threshold": 0.1,
+                "max_evaluation": 1,
+            },
+        )
 
     def test_initial_policy(self):
         """Check initial policy of agent is correct.
@@ -120,20 +127,20 @@ class TestDPStateAgent:
         """
         valid_value = self.get_valid_state_values["initial"]
 
-        assert isinstance(self.agent.value, np.ndarray)
-        assert (self.agent.value == valid_value).all()
+        for grid_cell in valid_value:
+            assert self.agent.value_v[grid_cell] == valid_value[grid_cell]
 
     def test_single_policy_evaluation(self):
         """Check policy_evaluation method with single mode is correct."""
         mock_reward_grid = self.get_reward_grid
         valid_value = self.get_valid_state_values["single_iter"]
-        valid_max_diff = (abs(valid_value)).max()
+        valid_max_diff = max(abs(min(valid_value.values())), max(valid_value.values()))
         lamb = 0.1
 
         max_diff = self.agent.policy_evaluation(mock_reward_grid)
 
         for state in self.all_states:
-            assert math.isclose(valid_value[state], self.agent.value[state])
+            assert math.isclose(valid_value[state], self.agent.value_v[state])
 
         assert math.isclose(max_diff, valid_max_diff)
 
@@ -216,22 +223,27 @@ class TestDPStateAgent:
 
     @property
     def get_valid_state_values(self) -> Dict[str, np.ndarray]:
-        valid_state_values = dict(
-            initial=np.array(
-                [
-                    [0, 0, 0, 0],
-                    [0, 0, 0, 0],
-                    [0, 0, 0, 0],
-                ]
-            ),
-            single_iter=np.array(
-                [
-                    [0, -10 / 3, -10 / 3, 0],
-                    [-10 / 3, 0, -10 / 4, 30],
-                    [0, -10 / 3, 100 / 3, 0],
-                ]
-            ),
+
+        initial = np.array(
+            [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ]
         )
+        single_iter = np.array(
+            [
+                [0, -10 / 3, -10 / 3, 0],
+                [-10 / 3, 0, -10 / 4, 30],
+                [0, -10 / 3, 100 / 3, 0],
+            ]
+        )
+
+        valid_state_values = dict(initial=dict(), single_iter=dict())
+        for grid_cell in itertools.product(range(ROW), range(COL)):
+            valid_state_values["initial"][grid_cell] = initial[grid_cell]
+            valid_state_values["single_iter"][grid_cell] = single_iter[grid_cell]
+
         return valid_state_values
 
     @property

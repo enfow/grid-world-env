@@ -1,6 +1,6 @@
 """Define Agents with Dynamic Programming Algorithm."""
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 import gym
 import numpy as np
@@ -28,15 +28,10 @@ class DPAgent(AbstractAgent):
             - lamb: lambda value for return
         """
         super().__init__(env)
-        self.value: np.ndarray = self._get_initial_value()
-        self.all_states: List[Tuple[int, int]] = self._get_all_states()
+        self.value_v: Dict[Tuple[int, int], float] = self._get_initial_value_v()
         self.lamb: float = config["lambda"]
         self.threshold: float = config["threshold"]
         self.max_eval: int = config["max_evaluation"]
-
-    def get_action(self, state: Tuple[int, int]) -> int:
-        """Get action."""
-        raise NotImplementedError
 
     def policy_evaluation(
         self,
@@ -58,28 +53,14 @@ class DPAgent(AbstractAgent):
         """
         reward_grid = update_info["reward_grid"]
 
-        for _ in range(self.max_eval):
-            max_diff = self.policy_evaluation(reward_grid)
-            if max_diff < self.threshold:
-                break
-
+        max_diff = self.policy_evaluation(reward_grid)
         self.policy_improvement()
+
         return max_diff
 
 
-class DPStateAgent(DPAgent):
+class PolicyIteration(DPAgent):
     """Define Dynamic Programming Algorithm."""
-
-    def get_action(self, state: Tuple[int, int]) -> int:
-        """Get action given state.
-
-        Params:
-            - state: the position of agent on the grid
-
-        Returns:
-            - action: the proper actions for input state.
-        """
-        return super()._get_action_with_v(state)
 
     def policy_evaluation(
         self,
@@ -96,21 +77,26 @@ class DPStateAgent(DPAgent):
         Notes:
             - max_diff should be calculated with the absolute.
         """
-        new_value: np.ndarray = self._get_initial_value()
-        max_diff: float = 0.0
-        for state in self.all_states:
-            new_value[state] = self.__backup(state, reward_grid)
-            max_diff = max(max_diff, abs(new_value[state] - self.value[state]))
-        self.value = new_value
+        for _ in range(self.max_eval):
+            new_value: Dict[Tuple[int, int], float] = self._get_initial_value_v()
+            max_diff: float = 0.0
+            for state in self.all_states:
+                new_value[state] = self.__backup(state, reward_grid)
+                max_diff = max(max_diff, abs(new_value[state] - self.value_v[state]))
+            self.value_v = new_value
+
+            if max_diff < self.threshold:
+                break
+
         return max_diff
 
     def policy_improvement(self) -> None:
-        """Update greedy policy with self.value."""
+        """Update greedy policy with self.value_v."""
         for state in self.all_states:
             greedy_actions = list()
             for idx, action in enumerate(self.policy[state]):
                 next_state = self._get_next_state(state, action)
-                next_value = self.value[next_state]
+                next_value = self.value_v[next_state]
                 if idx == 0:
                     max_value = next_value
                 if next_value > max_value:
@@ -132,6 +118,6 @@ class DPStateAgent(DPAgent):
             next_state = self._get_next_state(state, action)
             reward = reward_grid[next_state]
             value += self.policy[state][action] * (
-                reward + self.lamb * self.value[next_state]
+                reward + self.lamb * self.value_v[next_state]
             )
         return value

@@ -22,17 +22,12 @@ class MCAgent(AbstractAgent):
         super().__init__(env)
         self.transactions: List[SAR] = list()
         self.visited_state: Dict[STATE, int] = dict()
-        self.value = self._get_initial_value()
         self.lamb = config["lambda"]
 
     def reset(self) -> None:
         """Reset the agent's state."""
         self.transactions = list()
         self.visited_state = dict()
-
-    def get_action(self, state: Tuple[int, int]) -> int:
-        """Get action according to current policy."""
-        return super()._get_action_with_v(state)
 
     def update_policy(self, update_info: Dict[str, Any]) -> None:
         """Update policy with experiences."""
@@ -61,7 +56,7 @@ class MCAgent(AbstractAgent):
 
             if self.visited_state[state] == 1:
                 state_to_returns[state].append(return_g)
-                self.value[state] = np.mean(state_to_returns[state])
+                self.value_v[state] = np.mean(state_to_returns[state])
             elif self.visited_state[state] > 1:
                 self.visited_state[state] -= 1
                 state_to_returns[state].append(return_g)
@@ -69,12 +64,12 @@ class MCAgent(AbstractAgent):
                 raise RuntimeError
 
     def policy_improvement(self) -> None:
-        """Update greedy policy with self.value."""
+        """Update greedy policy with self.value_v."""
         for state in self.all_states:
             greedy_actions = list()
             for idx, action in enumerate(self.policy[state]):
                 next_state = self._get_next_state(state, action)
-                next_value = self.value[next_state]
+                next_value = self.value_v[next_state]
                 if idx == 0:
                     max_value = next_value
                 if next_value > max_value:

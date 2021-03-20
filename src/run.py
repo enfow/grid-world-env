@@ -13,7 +13,7 @@ from typing import Any
 import gym
 from gym.wrappers import Monitor
 
-from agent.dp import DPStateAgent
+from agent.dp import PolicyIteration
 from agent.monte_carlo import MCAgent
 from agent.random_policy import RandomPolicy
 from env.custom_minigrid import CustomLavaEnv
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     if args.policy == "random":
         run_policy = RandomPolicy(env)
     elif args.policy == "dpstate":
-        run_policy = DPStateAgent(env, AGENT_CONFIG)
+        run_policy = PolicyIteration(env, AGENT_CONFIG)
     elif args.policy == "mc":
         run_policy = MCAgent(env, AGENT_CONFIG)
     else:
