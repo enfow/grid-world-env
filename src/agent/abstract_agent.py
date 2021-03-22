@@ -30,10 +30,8 @@ class AbstractAgent:
         self.row, self.col = env.grid_size
         self.cur_pos = None
         self.all_states = self._get_all_states()
-        self.value_v: Dict[Tuple[int, int], float] = self._get_initial_value_v()
-        self.policy: Dict[
-            Tuple[int, int], Dict[str, float]
-        ] = self._get_initial_policy()
+        self.value_v: Dict[STATE, float] = self._get_initial_value_v()
+        self.policy: Dict[STATE, Dict[str, float]] = self._get_initial_policy()
 
     def get_action(self, state: STATE) -> int:
         """Get action given state with current policy.
@@ -81,9 +79,7 @@ class AbstractAgent:
 
         return policy
 
-    def _get_next_state(
-        self, cur_state: Tuple[int, int], action: str
-    ) -> Tuple[int, int]:
+    def _get_next_state(self, cur_state: STATE, action: str) -> Tuple[int, int]:
         """Get next state with current state and current action.
 
         Notes:
@@ -96,9 +92,7 @@ class AbstractAgent:
         next_state = (cur_state[0] + move_row, cur_state[1] + move_col)
         return next_state
 
-    def available_actions_on_state(
-        self, state: Tuple[int, int]
-    ) -> Dict[str, Tuple[int, int]]:
+    def available_actions_on_state(self, state: STATE) -> Dict[str, STATE]:
         """Get available actions list on certain state."""
         row, col = state
         available_actions = dict()
@@ -136,7 +130,7 @@ class AbstractAgent:
         print(self.value_v)
 
     @property
-    def action_to_move(self) -> Dict[str, Tuple[int, int]]:
+    def action_to_move(self) -> Dict[str, STATE]:
         """Get direction of each actions.
 
         Notes:
