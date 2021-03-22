@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Tuple
 import gym
 
 STATE = Tuple[int, int]
+ACTION = int
 
 
 class AbstractAgent:
@@ -31,6 +32,7 @@ class AbstractAgent:
         self.cur_pos = None
         self.all_states = self._get_all_states()
         self.value_v: Dict[STATE, float] = self._get_initial_value_v()
+        self.value_q: Dict[STATE, Dict[str, float]] = self._get_initial_value_q()
         self.policy: Dict[STATE, Dict[str, float]] = self._get_initial_policy()
 
     def get_action(self, state: STATE) -> int:
@@ -66,7 +68,18 @@ class AbstractAgent:
 
     def _get_initial_value_v(self) -> Dict[STATE, float]:
         """Get initial value of the each state."""
-        return {state: 0 for state in self.all_states}
+        return {state: 0.0 for state in self.all_states}
+
+    def _get_initial_value_q(self) -> Dict[STATE, Dict[str, float]]:
+        """Get initial value of the each state."""
+        q_value = dict()
+
+        states = itertools.product(range(self.row), range(self.col))
+        for state in states:
+            actions = self.available_actions_on_state(state).keys()
+            q_value[state] = {action: 0.0 / len(actions) for action in actions}
+
+        return q_value
 
     def _get_initial_policy(self) -> Dict[STATE, Dict[str, float]]:
         """Get initial policy for each state."""
