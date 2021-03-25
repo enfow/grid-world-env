@@ -16,9 +16,17 @@ from gym.wrappers import Monitor
 from agent.dp import PolicyIteration
 from agent.monte_carlo import MCAgent
 from agent.random_policy import RandomPolicy
+from agent.temporal_difference import QLearningAgent, SARSAAgent
 from env.custom_minigrid import CustomLavaEnv
 
-AGENT_CONFIG = {"lambda": 0.1, "threshold": 0.00001, "max_evaluation": 1000}
+AGENT_CONFIG = {
+    "lambda": 0.1,
+    "threshold": 0.00001,
+    "max_evaluation": 1000,
+    # SARSA
+    "lr": 0.01,
+    "epsilon": 0.1,
+}
 
 ENV_CONFIG = {"width": 5, "height": 5, "obstacle_pos": ((2, 0), (2, 4))}
 
@@ -56,8 +64,18 @@ def runner(
             next_state = obs["pos"]
 
             update_info["agent_pos"] = next_state
+
+            # for DP
             update_info["reward_grid"] = obs["reward_grid"]
+            # for MC
             update_info["episode"].append((cur_state, action, next_state, reward))
+            # for TD
+            update_info["state"] = cur_state
+            update_info["action"] = action
+            update_info["reward"] = reward
+            update_info["next_state"] = next_state
+
+            policy.update_policy(update_info)
 
             episode_reward += reward
             episode_length += 1
@@ -68,9 +86,10 @@ def runner(
         print("Update Step: {} | Total reward: {}".format(update_step, episode_reward))
         print("Update Step: {} | Total length: {}".format(update_step, episode_length))
         print()
-        policy.update_policy(update_info)
+        # policy.update_policy(update_info)
         policy.print_policy()
         policy.print_value()
+        policy.print_action_value()
         print(obs["reward_grid"])
         print()
 
@@ -91,6 +110,10 @@ if __name__ == "__main__":
         run_policy = PolicyIteration(env, AGENT_CONFIG)
     elif args.policy == "mc":
         run_policy = MCAgent(env, AGENT_CONFIG)
+    elif args.policy == "sarsa":
+        run_policy = SARSAAgent(env, AGENT_CONFIG)
+    elif args.policy == "qlearning":
+        run_policy = QLearningAgent(env, AGENT_CONFIG)
     else:
         raise NotImplementedError
     runner(
