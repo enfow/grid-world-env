@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Tuple
 import gym
 
 STATE = Tuple[int, int]
+ACTION = int
 
 
 class AbstractAgent:
@@ -28,12 +29,15 @@ class AbstractAgent:
         self.actions: Dict[str, int] = env.actions
         self.action_space = env.action_space
         self.row, self.col = env.grid_size
-        self.cur_pos = None
+        self.cur_pos: STATE = env.agent_pos
         self.all_states = self._get_all_states()
-        self.value_v: Dict[Tuple[int, int], float] = self._get_initial_value_v()
-        self.policy: Dict[
-            Tuple[int, int], Dict[str, float]
-        ] = self._get_initial_policy()
+        self.value_v: Dict[STATE, float] = self._get_initial_value_v()
+        self.value_q: Dict[STATE, Dict[str, float]] = self._get_initial_value_q()
+        self.policy: Dict[STATE, Dict[str, float]] = self._get_initial_policy()
+
+    def update_policy(self, update_info: Dict[str, Any]) -> None:
+        """Update policy with experiences."""
+        raise NotImplementedError
 
     def get_action(self, state: STATE) -> int:
         """Get action given state with current policy.
@@ -58,17 +62,24 @@ class AbstractAgent:
                     max_actions.append(action)
         return self.actions[random.choice(max_actions)]
 
-    def update_policy(self, update_info: Dict[str, Any]) -> None:
-        """Update policy with experiences."""
-        raise NotImplementedError
-
     def _get_all_states(self) -> List[STATE]:
         """Get all of the availavle states."""
         return list(itertools.product(range(self.row), range(self.col)))
 
     def _get_initial_value_v(self) -> Dict[STATE, float]:
         """Get initial value of the each state."""
-        return {state: 0 for state in self.all_states}
+        return {state: 0.0 for state in self.all_states}
+
+    def _get_initial_value_q(self) -> Dict[STATE, Dict[str, float]]:
+        """Get initial value of the each state."""
+        q_value = dict()
+
+        states = itertools.product(range(self.row), range(self.col))
+        for state in states:
+            actions = self.available_actions_on_state(state).keys()
+            q_value[state] = {action: 0.0 / len(actions) for action in actions}
+
+        return q_value
 
     def _get_initial_policy(self) -> Dict[STATE, Dict[str, float]]:
         """Get initial policy for each state."""
@@ -81,9 +92,7 @@ class AbstractAgent:
 
         return policy
 
-    def _get_next_state(
-        self, cur_state: Tuple[int, int], action: str
-    ) -> Tuple[int, int]:
+    def _get_next_state(self, cur_state: STATE, action: str) -> Tuple[int, int]:
         """Get next state with current state and current action.
 
         Notes:
@@ -96,9 +105,7 @@ class AbstractAgent:
         next_state = (cur_state[0] + move_row, cur_state[1] + move_col)
         return next_state
 
-    def available_actions_on_state(
-        self, state: Tuple[int, int]
-    ) -> Dict[str, Tuple[int, int]]:
+    def available_actions_on_state(self, state: STATE) -> Dict[str, STATE]:
         """Get available actions list on certain state."""
         row, col = state
         available_actions = dict()
@@ -135,8 +142,12 @@ class AbstractAgent:
         """Print state value."""
         print(self.value_v)
 
+    def print_action_value(self) -> None:
+        """Print state value."""
+        print(self.value_q)
+
     @property
-    def action_to_move(self) -> Dict[str, Tuple[int, int]]:
+    def action_to_move(self) -> Dict[str, STATE]:
         """Get direction of each actions.
 
         Notes:
