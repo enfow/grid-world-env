@@ -29,11 +29,15 @@ class AbstractAgent:
         self.actions: Dict[str, int] = env.actions
         self.action_space = env.action_space
         self.row, self.col = env.grid_size
-        self.cur_pos = None
+        self.cur_pos: STATE = env.agent_pos
         self.all_states = self._get_all_states()
         self.value_v: Dict[STATE, float] = self._get_initial_value_v()
         self.value_q: Dict[STATE, Dict[str, float]] = self._get_initial_value_q()
         self.policy: Dict[STATE, Dict[str, float]] = self._get_initial_policy()
+
+    def update_policy(self, update_info: Dict[str, Any]) -> None:
+        """Update policy with experiences."""
+        raise NotImplementedError
 
     def get_action(self, state: STATE) -> int:
         """Get action given state with current policy.
@@ -57,10 +61,6 @@ class AbstractAgent:
                 elif prob == max_prob:
                     max_actions.append(action)
         return self.actions[random.choice(max_actions)]
-
-    def update_policy(self, update_info: Dict[str, Any]) -> None:
-        """Update policy with experiences."""
-        raise NotImplementedError
 
     def _get_all_states(self) -> List[STATE]:
         """Get all of the availavle states."""
@@ -141,6 +141,10 @@ class AbstractAgent:
     def print_value(self) -> None:
         """Print state value."""
         print(self.value_v)
+
+    def print_action_value(self) -> None:
+        """Print state value."""
+        print(self.value_q)
 
     @property
     def action_to_move(self) -> Dict[str, STATE]:
