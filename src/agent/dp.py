@@ -63,7 +63,7 @@ class PolicyIteration(AbstractAgent):
 
     def policy_improvement(self) -> None:
         """Update greedy policy with self.value_v."""
-        self.update_policy_with_v_value()
+        self.update_policy_with_value_v()
 
     def __backup(self, state: Tuple[int, int], reward_grid: np.ndarray) -> float:
         """Update all of the states."""

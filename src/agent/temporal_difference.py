@@ -29,10 +29,10 @@ class SARSAAgent(AbstractAgent):
         cur_a = update_info["action"]
         reward = update_info["reward"]
         next_s = update_info["next_state"]
-        self.update_q_value(cur_s, cur_a, reward, next_s)
-        self.update_policy_with_q_value()
+        self.update_value_q(cur_s, cur_a, reward, next_s)
+        self.update_policy_with_value_q()
 
-    def update_q_value(
+    def update_value_q(
         self, cur_s: STATE, cur_a: ACTION, reward: REWARD, next_s: STATE
     ) -> None:
         """Update q value.
@@ -51,7 +51,7 @@ class SARSAAgent(AbstractAgent):
 class QLearningAgent(SARSAAgent):
     """Define Q-learning Agnet."""
 
-    def update_q_value(
+    def update_value_q(
         self, cur_s: STATE, cur_a: ACTION, reward: REWARD, next_s: STATE
     ) -> None:
         """Update q value.

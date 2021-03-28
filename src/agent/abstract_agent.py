@@ -41,7 +41,7 @@ class AbstractAgent:
         """Update policy with experiences."""
         raise NotImplementedError
 
-    def update_policy_with_v_value(self) -> None:
+    def update_policy_with_value_v(self) -> None:
         """Update greedy policy with self.value_v."""
         for state in self.all_states:
             greedy_actions = list()
@@ -62,7 +62,7 @@ class AbstractAgent:
                 else:
                     self.policy[state][action] = 0.0
 
-    def update_policy_with_q_value(self) -> None:
+    def update_policy_with_value_q(self) -> None:
         """Update Policy with q value."""
         for state in self.all_states:
             max_q = None
@@ -126,14 +126,14 @@ class AbstractAgent:
 
     def _get_initial_value_q(self) -> Dict[STATE, Dict[ACTION, float]]:
         """Get initial value of the each state."""
-        q_value = dict()
+        value_q = dict()
 
         states = itertools.product(range(self.row), range(self.col))
         for state in states:
             actions = self.get_possible_actions(state).keys()
-            q_value[state] = {action: 0.0 / len(actions) for action in actions}
+            value_q[state] = {action: 0.0 / len(actions) for action in actions}
 
-        return q_value
+        return value_q
 
     def _get_initial_policy(self) -> Dict[STATE, Dict[ACTION, float]]:
         """Get initial policy for each state."""
