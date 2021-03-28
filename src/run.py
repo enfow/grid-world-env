@@ -13,7 +13,7 @@ from typing import Any
 import gym
 from gym.wrappers import Monitor
 
-from agent.dynamic_programming import PolicyIteration
+from agent.dynamic_programming import PolicyIteration, ValueIteration
 from agent.monte_carlo import MCAgent
 from agent.random_policy import RandomPolicy
 from agent.temporal_difference import QLearningAgent, SARSAAgent
@@ -63,8 +63,8 @@ def runner(
             obs, reward, done, _ = environment.step(action)
             next_state = obs["pos"]
 
+            # update informations
             update_info["agent_pos"] = next_state
-
             # for DP
             update_info["reward_grid"] = obs["reward_grid"]
             # for MC
@@ -86,10 +86,7 @@ def runner(
         print("Update Step: {} | Total reward: {}".format(update_step, episode_reward))
         print("Update Step: {} | Total length: {}".format(update_step, episode_length))
         print()
-        # policy.update_policy(update_info)
-        policy.print_policy()
-        policy.print_state_value()
-        policy.print_action_value()
+        policy.print_results()
         print(obs["reward_grid"])
         print()
 
@@ -106,8 +103,10 @@ if __name__ == "__main__":
     env = CustomLavaEnv(**ENV_CONFIG)
     if args.policy == "random":
         run_policy = RandomPolicy(env)
-    elif args.policy == "dpstate":
+    elif args.policy == "pi":
         run_policy = PolicyIteration(env, AGENT_CONFIG)
+    elif args.policy == "vi":
+        run_policy = ValueIteration(env, AGENT_CONFIG)
     elif args.policy == "mc":
         run_policy = MCAgent(env, AGENT_CONFIG)
     elif args.policy == "sarsa":
