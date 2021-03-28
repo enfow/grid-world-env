@@ -34,7 +34,7 @@ class MCAgent(AbstractAgent):
         self.__analyze_episode(update_info["episode"])
 
         self.update_value_v()
-        self.policy_improvement()
+        self.update_policy_with_v_value()
 
         self.reset()
 
@@ -62,27 +62,6 @@ class MCAgent(AbstractAgent):
                 state_to_returns[state].append(return_g)
             else:
                 raise RuntimeError
-
-    def policy_improvement(self) -> None:
-        """Update greedy policy with self.value_v."""
-        for state in self.all_states:
-            greedy_actions = list()
-            for idx, action in enumerate(self.policy[state]):
-                next_state = self._get_next_state(state, action)
-                next_value = self.value_v[next_state]
-                if idx == 0:
-                    max_value = next_value
-                if next_value > max_value:
-                    greedy_actions = [action]
-                    max_value = next_value
-                elif next_value == max_value:
-                    greedy_actions.append(action)
-
-            for action in self.policy[state]:
-                if action in greedy_actions:
-                    self.policy[state][action] = 1 / len(greedy_actions)
-                else:
-                    self.policy[state][action] = 0.0
 
     def __analyze_episode(
         self, episode: List[Tuple[STATE, ACTION, STATE, REWARD]]

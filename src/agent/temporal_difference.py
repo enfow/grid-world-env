@@ -1,6 +1,5 @@
 """Define Agents with Temporal Difference Method."""
 
-import random
 from typing import Any, Dict, Tuple
 
 import gym
@@ -23,24 +22,6 @@ class SARSAAgent(AbstractAgent):
         self.lamb = config["lambda"]
         self.learning_rate = config["lr"]
         self.epsilon = config["epsilon"]
-        self.action_int_to_str = {
-            self.actions[state_s]: state_s for state_s in self.actions
-        }
-
-    def get_action(self, state: STATE) -> int:
-        """Get action with episilon greedy.
-
-        Notes:
-            - random.random(): random floating point number in the range [0.0, 1.0)
-        """
-        if self.epsilon < random.random():
-            # greedy
-            action = super().get_action(state)
-        else:
-            # random action
-            available_actions = list(self.available_actions_on_state(state))
-            action = self.actions[random.choice(available_actions)]
-        return action
 
     def update_policy(self, update_info: Dict[str, Any]) -> None:
         """Update policy with experiences."""
@@ -51,26 +32,6 @@ class SARSAAgent(AbstractAgent):
         self.update_q_value(cur_s, cur_a, reward, next_s)
         self.update_policy_with_q_value()
 
-    def update_policy_with_q_value(self) -> None:
-        """Update Policy with q value."""
-        for state in self.all_states:
-            max_q = None
-            max_actions = list()
-            for action, action_q in self.value_q[state].items():
-                if max_q is None:
-                    max_q = action_q
-                    max_actions = [action]
-                if max_q < action_q:
-                    max_q = action_q
-                    max_actions = [action]
-                elif max_q == action_q:
-                    max_actions.append(action)
-            for action in self.policy[state]:
-                if action in max_actions:
-                    self.policy[state][action] = 1 / len(max_actions)
-                else:
-                    self.policy[state][action] = 0.0
-
     def update_q_value(
         self, cur_s: STATE, cur_a: ACTION, reward: REWARD, next_s: STATE
     ) -> None:
@@ -79,9 +40,7 @@ class SARSAAgent(AbstractAgent):
         Notes:
             - sarsa update: q(s,a) = q(s,a) + lr * (r + (gamma * q(s',a')) - q(s,a))
         """
-        next_a = self.get_action(next_s)
-        cur_a = self.action_int_to_str[cur_a]
-        next_a = self.action_int_to_str[next_a]
+        next_a = self.get_action(next_s, epsilon=self.epsilon)
         cur_q = self.value_q[cur_s][cur_a]
         next_q = self.value_q[next_s][next_a]
         self.value_q[cur_s][cur_a] = cur_q + self.learning_rate * (
@@ -102,10 +61,8 @@ class QLearningAgent(SARSAAgent):
                 r + (gamma * argmax q(s')) - q(s,a)
             )
         """
-        cur_a = self.action_int_to_str[cur_a]
         cur_q = self.value_q[cur_s][cur_a]
-        next_a = super().get_action(next_s)
-        next_a = self.action_int_to_str[next_a]
+        next_a = super().get_action(next_s, epsilon=self.epsilon)
         next_q = self.value_q[next_s][next_a]
         self.value_q[cur_s][cur_a] = cur_q + self.learning_rate * (
             reward + (self.lamb * next_q) - cur_q

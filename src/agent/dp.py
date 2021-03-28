@@ -8,8 +8,8 @@ import numpy as np
 from agent.abstract_agent import AbstractAgent
 
 
-class DPAgent(AbstractAgent):
-    """Define Dynamic Programming Abstract Class."""
+class PolicyIteration(AbstractAgent):
+    """Define Dynamic Programming Algorithm."""
 
     def __init__(
         self,
@@ -32,35 +32,6 @@ class DPAgent(AbstractAgent):
         self.lamb: float = config["lambda"]
         self.threshold: float = config["threshold"]
         self.max_eval: int = config["max_evaluation"]
-
-    def policy_evaluation(
-        self,
-        reward_grid: np.ndarray,
-    ) -> float:
-        """Define Policy Evaluation."""
-        raise NotImplementedError
-
-    def policy_improvement(self) -> None:
-        """Define Policy Improvement."""
-        raise NotImplementedError
-
-    def update_policy(self, update_info: Dict[str, Any]) -> float:
-        """Updata policy with policy evaluation and policy improvement.
-
-        Notes:
-            - policy evaluation: Update value
-            - policy improvement: Update policy with new value
-        """
-        reward_grid = update_info["reward_grid"]
-
-        max_diff = self.policy_evaluation(reward_grid)
-        self.policy_improvement()
-
-        return max_diff
-
-
-class PolicyIteration(DPAgent):
-    """Define Dynamic Programming Algorithm."""
 
     def policy_evaluation(
         self,
@@ -92,24 +63,7 @@ class PolicyIteration(DPAgent):
 
     def policy_improvement(self) -> None:
         """Update greedy policy with self.value_v."""
-        for state in self.all_states:
-            greedy_actions = list()
-            for idx, action in enumerate(self.policy[state]):
-                next_state = self._get_next_state(state, action)
-                next_value = self.value_v[next_state]
-                if idx == 0:
-                    max_value = next_value
-                if next_value > max_value:
-                    greedy_actions = [action]
-                    max_value = next_value
-                elif next_value == max_value:
-                    greedy_actions.append(action)
-
-            for action in self.policy[state]:
-                if action in greedy_actions:
-                    self.policy[state][action] = 1 / len(greedy_actions)
-                else:
-                    self.policy[state][action] = 0.0
+        self.update_policy_with_v_value()
 
     def __backup(self, state: Tuple[int, int], reward_grid: np.ndarray) -> float:
         """Update all of the states."""
@@ -121,3 +75,17 @@ class PolicyIteration(DPAgent):
                 reward + self.lamb * self.value_v[next_state]
             )
         return value
+
+    def update_policy(self, update_info: Dict[str, Any]) -> float:
+        """Updata policy with policy evaluation and policy improvement.
+
+        Notes:
+            - policy evaluation: Update value
+            - policy improvement: Update policy with new value
+        """
+        reward_grid = update_info["reward_grid"]
+
+        max_diff = self.policy_evaluation(reward_grid)
+        self.policy_improvement()
+
+        return max_diff
