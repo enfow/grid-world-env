@@ -1,6 +1,7 @@
 """Define AbstractAgent."""
 import itertools
 import random
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Tuple
 
 import gym
@@ -9,7 +10,7 @@ STATE = Tuple[int, int]
 ACTION = int
 
 
-class AbstractAgent:
+class AbstractAgent(ABC):
     """Define Abstract Agent."""
 
     def __init__(self, env: gym.Env) -> None:
@@ -37,12 +38,35 @@ class AbstractAgent:
         self.value_q: Dict[STATE, Dict[ACTION, float]] = self._get_initial_value_q()
         self.policy: Dict[STATE, Dict[ACTION, float]] = self._get_initial_policy()
 
+    @abstractmethod
+    def print_results(self) -> None:
+        """Print results like policy, values.
+
+        Notes:
+            - Use methods below
+                - print_policy
+                - print_state_value
+                - print_action_value
+        """
+        pass
+
+    @abstractmethod
     def update_policy(self, update_info: Dict[str, Any]) -> None:
-        """Update policy with experiences."""
-        raise NotImplementedError
+        """Update policy with experiences.
+
+        Notes:
+            - Use methods below
+                - update_policy_with_value_v
+                - update_policy_with_value_q
+        """
+        pass
 
     def update_policy_with_value_v(self) -> None:
-        """Update greedy policy with self.value_v."""
+        """Update greedy policy with self.value_v.
+
+        References:
+            - Reinforcement Learning The introduction(Sutton) p80
+        """
         for state in self.all_states:
             greedy_actions = list()
             for idx, action in enumerate(self.policy[state]):
@@ -177,6 +201,7 @@ class AbstractAgent:
 
     def print_policy(self) -> None:
         """Print state value."""
+        print("POLICY")
         for state, action_prob in self.policy.items():
             max_prob = 0.0
             actions = list()

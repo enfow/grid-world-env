@@ -9,7 +9,7 @@ from agent.abstract_agent import AbstractAgent
 
 
 class PolicyIteration(AbstractAgent):
-    """Define Dynamic Programming Algorithm."""
+    """Define Policy Iteration."""
 
     def __init__(
         self,
@@ -18,14 +18,8 @@ class PolicyIteration(AbstractAgent):
     ) -> None:
         """Initialize.
 
-        Args:
-            - row, col: the size of grid
-            - actions: mapping action_name to int value for environmnet
-                - left : 0, right : 1, up : 2, down : 3
-            - policy: mappint state(grid cell) to action and probability pair
-            - value: value of the each state
-            - all_states: the list of all states(grid cell)
-            - lamb: lambda value for return
+        References:
+            - Reinforcement Learning The introduction(Sutton) p80
         """
         super().__init__(env)
         self.value_v: Dict[Tuple[int, int], float] = self._get_initial_value_v()
@@ -41,16 +35,11 @@ class PolicyIteration(AbstractAgent):
 
         Params:
             - reward_grid: reward value information for all next states.
-
-        Returns:
-            - max_diff: maximum of the diffs
-
-        Notes:
-            - max_diff should be calculated with the absolute.
         """
         for _ in range(self.max_eval):
             new_value: Dict[Tuple[int, int], float] = self._get_initial_value_v()
             max_diff: float = 0.0
+            # loop for each state
             for state in self.all_states:
                 new_value[state] = self.__backup(state, reward_grid)
                 max_diff = max(max_diff, abs(new_value[state] - self.value_v[state]))
@@ -60,10 +49,6 @@ class PolicyIteration(AbstractAgent):
                 break
 
         return max_diff
-
-    def policy_improvement(self) -> None:
-        """Update greedy policy with self.value_v."""
-        self.update_policy_with_value_v()
 
     def __backup(self, state: Tuple[int, int], reward_grid: np.ndarray) -> float:
         """Update all of the states."""
@@ -75,6 +60,10 @@ class PolicyIteration(AbstractAgent):
                 reward + self.lamb * self.value_v[next_state]
             )
         return value
+
+    def policy_improvement(self) -> None:
+        """Update greedy policy with self.value_v."""
+        self.update_policy_with_value_v()
 
     def update_policy(self, update_info: Dict[str, Any]) -> float:
         """Updata policy with policy evaluation and policy improvement.
@@ -89,3 +78,25 @@ class PolicyIteration(AbstractAgent):
         self.policy_improvement()
 
         return max_diff
+
+    def print_results(self) -> None:
+        """Print results for dynamic programming update."""
+        self.print_policy()
+        self.print_state_value()
+
+
+class ValueIteration(PolicyIteration):
+    """Define Value Iteration.
+
+    References:
+        - Reinforcement Learning The introduction(Sutton) p83
+    """
+
+    def __init__(
+        self,
+        env: gym.Env,
+        config: Dict[str, Any],
+    ) -> None:
+        """Initialize."""
+        super().__init__(env, config)
+        self.max_eval = 1

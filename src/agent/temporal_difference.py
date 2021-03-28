@@ -47,6 +47,11 @@ class SARSAAgent(AbstractAgent):
             reward + (self.lamb * next_q) - cur_q
         )
 
+    def print_results(self) -> None:
+        """Print results for temporal difference update."""
+        self.print_policy()
+        self.print_action_value()
+
 
 class QLearningAgent(SARSAAgent):
     """Define Q-learning Agnet."""

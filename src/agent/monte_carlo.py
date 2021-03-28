@@ -15,7 +15,11 @@ SAR = Tuple[STATE, ACTION, REWARD]
 
 
 class MCAgent(AbstractAgent):
-    """Define Monte Calro Method Agent."""
+    """Define Monte Calro Method Agent.
+
+    References:
+        - Reinforcement Learning The introduction(Sutton) p92
+    """
 
     def __init__(self, env: gym.Env, config: Dict[str, Any]) -> None:
         """Initialize."""
@@ -33,12 +37,12 @@ class MCAgent(AbstractAgent):
         """Update policy with experiences."""
         self.__analyze_episode(update_info["episode"])
 
-        self.update_value_v()
+        self.monte_carlo_update()
         self.update_policy_with_value_v()
 
         self.reset()
 
-    def update_value_v(self) -> None:
+    def monte_carlo_update(self) -> None:
         """Update value v with monte carlo method."""
         return_g = 0
 
@@ -73,3 +77,8 @@ class MCAgent(AbstractAgent):
                 self.visited_state[cur_state] += 1
             else:
                 self.visited_state[cur_state] = 1
+
+    def print_results(self) -> None:
+        """Print results for monte carlo update."""
+        self.print_policy()
+        self.print_state_value()
