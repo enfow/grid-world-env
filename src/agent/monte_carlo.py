@@ -35,7 +35,7 @@ class MCAgent(AbstractAgent):
 
     def update_policy(self, update_info: Dict[str, Any]) -> None:
         """Update policy with experiences."""
-        self.__analyze_episode(update_info["episode"])
+        self.__analyze_episode(update_info["transactions"])
 
         self.monte_carlo_update()
         self.update_policy_with_value_v()
