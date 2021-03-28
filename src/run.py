@@ -13,7 +13,7 @@ from typing import Any
 import gym
 from gym.wrappers import Monitor
 
-from agent.dp import PolicyIteration
+from agent.dynamic_programming import PolicyIteration
 from agent.monte_carlo import MCAgent
 from agent.random_policy import RandomPolicy
 from agent.temporal_difference import QLearningAgent, SARSAAgent
@@ -88,7 +88,7 @@ def runner(
         print()
         # policy.update_policy(update_info)
         policy.print_policy()
-        policy.print_value()
+        policy.print_state_value()
         policy.print_action_value()
         print(obs["reward_grid"])
         print()
