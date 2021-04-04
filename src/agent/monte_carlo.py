@@ -22,7 +22,11 @@ class MCAgent(AbstractAgent):
     """
 
     def __init__(self, env: gym.Env, config: Dict[str, Any]) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Configurations:
+            - lambda: Coefficient for return value
+        """
         super().__init__(env)
         self.transactions: List[SAR] = list()
         self.visited_state: Dict[STATE, int] = dict()
