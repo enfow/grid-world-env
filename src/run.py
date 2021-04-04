@@ -21,13 +21,11 @@ from agent.temporal_difference import QLearningAgent, SARSAAgent
 from env.custom_minigrid import CustomLavaEnv
 
 AGENT_CONFIG = {
-    "policy": "qlearning",
-    "lambda": 0.01,
-    "threshold": 0.00001,
-    "max_evaluation": 100,
-    # SARSA
-    "lr": 0.01,
-    "epsilon": 0.1,
+    "lambda": 0.01,  # DP, MC, TD
+    "threshold": 0.00001,  # DP
+    "max_evaluation": 100,  # DP
+    "lr": 0.01,  # TD
+    "epsilon": 0.1,  # TD
 }
 
 ENV_CONFIG = {"height": 3, "width": 4, "obstacle_pos": ((1, 1), (0, 3))}
