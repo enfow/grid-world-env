@@ -17,7 +17,13 @@ class SARSAAgent(AbstractAgent):
     """Define SARSA Agent."""
 
     def __init__(self, env: gym.Env, config: Dict[str, Any]) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Configurations:
+            - lambda: Coefficient for Next Q value
+            - lr: Coefficient for Temporal Difference
+            - epsilon: Random Action Probability
+        """
         super().__init__(env)
         self.lamb = config["lambda"]
         self.learning_rate = config["lr"]
@@ -38,7 +44,7 @@ class SARSAAgent(AbstractAgent):
         """Update q value.
 
         Notes:
-            - sarsa update: q(s,a) = q(s,a) + lr * (r + (gamma * q(s',a')) - q(s,a))
+            - sarsa update: q(s,a) = q(s,a) + lr * (r + (lambda * q(s',a')) - q(s,a))
         """
         next_a = self.get_action(next_s, epsilon=self.epsilon)
         cur_q = self.value_q[cur_s][cur_a]

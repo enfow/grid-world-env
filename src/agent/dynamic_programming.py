@@ -20,6 +20,12 @@ class PolicyIteration(AbstractAgent):
 
         References:
             - Reinforcement Learning The introduction(Sutton) p80
+
+        Configurations:
+            - labmda: Coefficient for Next value.
+            - threshold: Threshold for policy evaluation (Stop iteration when
+                the max_diff value is smaller than this).
+            - max_evaluation: Max iteration for policy evaluation.
         """
         super().__init__(env)
         self.value_v: Dict[Tuple[int, int], float] = self._get_initial_value_v()
