@@ -9,6 +9,7 @@ Reference:
 """
 
 import argparse
+import logging
 import os
 from typing import Any, Dict, List
 
@@ -44,13 +45,11 @@ class Runner:
         n_episode: int = 10,
         max_length: int = 100,
         save_video: bool = True,
-        save_dir: str = "./video",
+        save_dir: str = "./result",
     ) -> None:
         """Initialize."""
+        # learning settings
         self.env = CustomLavaEnv(**env_config)
-        self.save_video = save_video
-        self.save_dir = save_dir
-
         self.policy = policy
         self.agent = self.get_agent(policy, self.env, agent_config)
 
@@ -61,6 +60,35 @@ class Runner:
         self.max_length = max_length
         self.episode_lengths: List[int] = []
         self.episode_rewards: List[float] = []
+
+        # log setttings
+        self.save_video = save_video
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+
+        self.save_dir = os.path.join(save_dir, policy)
+        if not os.path.exists(self.save_dir):
+            os.mkdir(self.save_dir)
+
+        log_file = os.path.join(self.save_dir, "log.txt")
+        # Delete old log if it exists.
+        if os.path.exists(log_file):
+            os.remove(log_file)
+
+        logging.basicConfig(
+            filename=log_file,
+            format="%(asctime)s [%(levelname)s] %(message)s",
+            datefmt="%Y/%m/%d %I:%M:%S",
+            level=logging.INFO,
+        )
+        logging.getLogger().addHandler(logging.StreamHandler())
+
+        logging.info("POLICY: %s", self.policy)
+        logging.info("ENV CONFIG: %s", self.env_config)
+        logging.info("AGENT CONFIG: %s", self.agent_config)
+        logging.info("N_EPISODES: %s", self.n_episode)
+        logging.info("MAX_LENGTH: %s", self.max_length)
+        logging.info("")
 
     def get_agent(
         self, policy: str, env: gym.Env, agent_config: Dict[str, Any]
@@ -90,7 +118,7 @@ class Runner:
                 save_dir = os.path.join(
                     self.save_dir, "{}_{}".format(self.policy, episode)
                 )
-                self.env = Monitor(self.env, save_dir, force=False)
+                self.env = Monitor(self.env, save_dir, force=True)
 
             if self.policy in ["pi", "vi"]:
                 self.run_dynamic_programming()
@@ -103,12 +131,12 @@ class Runner:
             else:
                 raise NotImplementedError
 
-            print(
-                "Episode: {} | Episode Length: {} | Episode reward: {}".format(
-                    episode, self.episode_lengths[-1], self.episode_rewards[-1]
-                )
+            logging.info(
+                "Episode: %d | Episode Length: %d | Episode reward: %d",
+                episode,
+                self.episode_lengths[-1],
+                self.episode_rewards[-1],
             )
-            print()
             self.agent.print_results()
 
             self.env.close()
@@ -220,7 +248,7 @@ parser.add_argument("--policy", default="random", type=str)
 parser.add_argument("--n_episode", default=10, type=int)
 parser.add_argument("--max_length", default=100, type=int)
 parser.add_argument("--save_video", action="store_true")
-parser.add_argument("--save_dir", default="video", type=str)
+parser.add_argument("--save_dir", default="result", type=str)
 args = parser.parse_args()
 
 if __name__ == "__main__":

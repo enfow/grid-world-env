@@ -1,5 +1,6 @@
 """Define AbstractAgent."""
 import itertools
+import logging
 import random
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Tuple
@@ -201,7 +202,7 @@ class AbstractAgent(ABC):
 
     def print_policy(self) -> None:
         """Print state value."""
-        print("POLICY")
+        logging.info("POLICY")
         for state, action_prob in self.policy.items():
             max_prob = 0.0
             actions = list()
@@ -211,23 +212,21 @@ class AbstractAgent(ABC):
                     actions = [action]
                 elif max_prob == prob:
                     actions.append(action)
-            print(
-                "{} | {}".format(
-                    state, [self.action_to_string(action) for action in actions]
-                )
+            logging.info(
+                "%s | %s", state, [self.action_to_string(action) for action in actions]
             )
-        print()
+        logging.info("")
 
     def print_state_value(self) -> None:
         """Print state value."""
-        print("STATE VALUE")
+        logging.info("STATE VALUE")
         for state, state_value in self.value_v.items():
-            print("{} | {}".format(state, round(state_value, 10)))
-        print()
+            logging.info("%s | %s", state, round(state_value, 10))
+        logging.info("")
 
     def print_action_value(self) -> None:
         """Print state value."""
-        print("ACTION VALUE")
+        logging.info("ACTION VALUE")
         for state, action_to_value in self.value_q.items():
             string_for_print = str(
                 [
@@ -235,8 +234,8 @@ class AbstractAgent(ABC):
                     for action, action_value in action_to_value.items()
                 ]
             )
-            print("{} | {}".format(state, string_for_print))
-        print()
+            logging.info("%s | %s", state, string_for_print)
+        logging.info("")
 
     def action_to_string(self, action: ACTION) -> str:
         """Get action string value matching with action int value."""
