@@ -95,6 +95,10 @@ class Runner:
                 self.run_monte_carlo()
             elif self.policy in ["sarsa", "qlearning"]:
                 self.run_temporal_difference()
+            elif self.policy in ["random"]:
+                self.run_random_agent()
+            else:
+                raise NotImplementedError
 
             print(
                 "Episode: {} | Episode Length: {} | Episode reward: {}".format(
@@ -105,6 +109,26 @@ class Runner:
             self.agent.print_results()
 
         self.env.close()
+
+    def run_random_agent(self) -> None:
+        """Run single episode for random agent."""
+        done = False
+        episode_reward = 0
+
+        obs = self.env.reset()
+
+        for _step in range(self.max_length):
+            cur_state = obs["pos"]
+            action = self.agent.get_action(cur_state)
+            obs, reward, done, _ = self.env.step(action)
+
+            episode_reward += reward
+
+            if done:
+                break
+
+        self.episode_lengths.append(_step + 1)
+        self.episode_rewards.append(episode_reward)
 
     def run_dynamic_programming(self) -> None:
         """Run single episode and update DP methods."""
