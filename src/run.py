@@ -4,10 +4,12 @@ Owner: kyeongmin woo
 Email: wgm0601@gmail.com
 
 Reference:
-    - https://github.com/maximecb/gym-minigrid
+    - MiniGridEnv: https://github.com/maximecb/gym-minigrid
+    - Gym Monitor: https://github.com/openai/gym/blob/master/gym/wrappers/monitor.py
 """
 
 import argparse
+import os
 from typing import Any, Dict, List
 
 import gym
@@ -46,6 +48,9 @@ class Runner:
     ) -> None:
         """Initialize."""
         self.env = CustomLavaEnv(**env_config)
+        self.save_video = save_video
+        self.save_dir = save_dir
+
         self.policy = policy
         self.agent = self.get_agent(policy, self.env, agent_config)
 
@@ -54,9 +59,6 @@ class Runner:
 
         self.n_episode = n_episode
         self.max_length = max_length
-        self.save_video = save_video
-        self.save_dir = save_dir
-
         self.episode_lengths: List[int] = []
         self.episode_rewards: List[float] = []
 
@@ -82,10 +84,13 @@ class Runner:
 
     def run(self) -> None:
         """Start Agent-Environment Interaction and update policy."""
-        if self.save_video:
-            self.env = Monitor(self.env, self.save_dir, force=True)
-
         for episode in range(self.n_episode):
+            # Rewrap the env every episode to save all episode video.
+            if self.save_video:
+                save_dir = os.path.join(
+                    self.save_dir, "{}_{}".format(self.policy, episode)
+                )
+                self.env = Monitor(self.env, save_dir, force=False)
 
             if self.policy in ["pi", "vi"]:
                 self.run_dynamic_programming()
@@ -106,7 +111,7 @@ class Runner:
             print()
             self.agent.print_results()
 
-        self.env.close()
+            self.env.close()
 
     def run_random_agent(self) -> None:
         """Run single episode for random agent."""
