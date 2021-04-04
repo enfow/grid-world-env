@@ -22,15 +22,15 @@ from env.custom_minigrid import CustomLavaEnv
 
 AGENT_CONFIG = {
     "policy": "qlearning",
-    "lambda": 0.1,
+    "lambda": 0.01,
     "threshold": 0.00001,
-    "max_evaluation": 1000,
+    "max_evaluation": 100,
     # SARSA
     "lr": 0.01,
     "epsilon": 0.1,
 }
 
-ENV_CONFIG = {"width": 5, "height": 5, "obstacle_pos": ((2, 0), (2, 4))}
+ENV_CONFIG = {"height": 3, "width": 4, "obstacle_pos": ((1, 1), (0, 3))}
 
 
 class Runner:
@@ -41,7 +41,7 @@ class Runner:
         policy: str,
         env_config: Dict[str, Any],
         agent_config: Dict[str, Any],
-        update_iter: int = 10,
+        n_episode: int = 10,
         max_length: int = 100,
         save_video: bool = True,
         save_dir: str = "./video",
@@ -54,7 +54,7 @@ class Runner:
         self.env_config = env_config
         self.agent_config = agent_config
 
-        self.update_iter = update_iter
+        self.n_episode = n_episode
         self.max_length = max_length
         self.save_video = save_video
         self.save_dir = save_dir
@@ -87,7 +87,7 @@ class Runner:
         if self.save_video:
             self.env = Monitor(self.env, self.save_dir, force=True)
 
-        for episode in range(self.update_iter):
+        for episode in range(self.n_episode):
 
             if self.policy in ["pi", "vi"]:
                 self.run_dynamic_programming()
@@ -190,6 +190,10 @@ class Runner:
 
 parser = argparse.ArgumentParser(description="Process some integers.")
 parser.add_argument("--policy", default="random", type=str)
+parser.add_argument("--n_episode", default=10, type=int)
+parser.add_argument("--max_length", default=100, type=int)
+parser.add_argument("--save_video", action="store_true")
+parser.add_argument("--save_dir", default="video", type=str)
 args = parser.parse_args()
 
 if __name__ == "__main__":
@@ -198,9 +202,9 @@ if __name__ == "__main__":
         policy=args.policy,
         env_config=ENV_CONFIG,
         agent_config=AGENT_CONFIG,
-        update_iter=10,
-        max_length=100,
-        save_video=True,
-        save_dir="./video",
+        n_episode=args.n_episode,
+        max_length=args.max_length,
+        save_video=args.save_video,
+        save_dir=args.save_dir,
     )
     runner.run()
